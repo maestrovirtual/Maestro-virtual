@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "title": "Maestro Virtual",
+    "description": "Plataforma educativa digital para aprender, conectar y crecer."
+  },
+  "navbar": {
+    "home": "Inicio",
+    "courses": "Cursos",
+    "events": "Eventos",
+    "contact": "Contacto",
+    "exploreCourses": "Explorar cursos"
+  }
+}

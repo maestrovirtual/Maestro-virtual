@@ -1,0 +1,15 @@
+Architecture Decision Record
+
+Decision:
+Use Next.js full-stack monorepo.
+
+Reason:
+The project requires frontend and backend integration with
+a small development team.
+
+Backend responsibilities:
+- Route Handlers
+- Prisma
+- Database access
+- Services
+- Authentication
