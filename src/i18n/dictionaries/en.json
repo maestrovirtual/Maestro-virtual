@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "title": "Maestro Virtual",
+    "description": "Digital educational platform to learn, connect and grow."
+  },
+  "navbar": {
+    "home": "Home",
+    "courses": "Courses",
+    "events": "Events",
+    "contact": "Contact",
+    "exploreCourses": "Explore courses"
+  }
+}
