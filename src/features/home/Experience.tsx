@@ -51,22 +51,26 @@ export const Experience: React.FC = () => {
     "WhatsApp Video 2026-07-16 at 9.24.20 PM.mp4",
   ];
 
-  const [startIndex, setStartIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
+  const totalPages = Math.ceil(videos.length / itemsPerPage);
 
   const handleNext = () => {
-    if (startIndex + itemsPerPage < videos.length) {
-      setStartIndex(startIndex + itemsPerPage);
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
     }
   };
 
   const handlePrev = () => {
-    if (startIndex - itemsPerPage >= 0) {
-      setStartIndex(startIndex - itemsPerPage);
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
     }
   };
 
-  const currentVideos = videos.slice(startIndex, startIndex + itemsPerPage);
+  // Divide videos into pages of 3
+  const pages = Array.from({ length: totalPages }, (_, i) => 
+    videos.slice(i * itemsPerPage, i * itemsPerPage + itemsPerPage)
+  );
 
   return (
     <section className="px-4 md:px-8 max-w-6xl mx-auto w-full flex flex-col gap-16 py-12">
@@ -94,7 +98,7 @@ export const Experience: React.FC = () => {
           <div className="flex gap-4">
             <button 
               onClick={handlePrev} 
-              disabled={startIndex === 0}
+              disabled={currentPage === 0}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300 font-bold"
               aria-label="Anteriores videos"
             >
@@ -102,7 +106,7 @@ export const Experience: React.FC = () => {
             </button>
             <button 
               onClick={handleNext} 
-              disabled={startIndex + itemsPerPage >= videos.length}
+              disabled={currentPage === totalPages - 1}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 disabled:opacity-30 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300 font-bold"
               aria-label="Siguientes videos"
             >
@@ -112,21 +116,33 @@ export const Experience: React.FC = () => {
         </div>
         
         {/* Animated container for videos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 transition-all duration-300 ease-in-out">
-          {currentVideos.map((video, index) => (
-            <div key={startIndex + index} className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 aspect-[9/16] bg-black animate-fade-in">
-              <video 
-                src={`/assets/videos/${video}`} 
-                controls 
-                className="w-full h-full object-cover"
-                preload="metadata"
-              >
-                Tu navegador no soporta la etiqueta de video.
-              </video>
-            </div>
-          ))}
+        <div className="overflow-hidden w-full">
+          <div 
+            className="flex transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${currentPage * 100}%)` }}
+          >
+            {pages.map((pageVideos, pageIndex) => (
+              <div key={pageIndex} className="w-full shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {pageVideos.map((video, index) => (
+                    <div key={index} className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 aspect-[9/16] bg-black">
+                      <video 
+                        src={`/assets/videos/${video}`} 
+                        controls 
+                        className="w-full h-full object-cover"
+                        preload="metadata"
+                      >
+                        Tu navegador no soporta la etiqueta de video.
+                      </video>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
