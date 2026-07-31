@@ -95,11 +95,12 @@ export const TargetAudience: React.FC = () => {
                 key={index}
                 className="w-[280px] md:w-[350px] shrink-0 px-3"
               >
-                <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 aspect-video bg-gray-100 h-full">
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 aspect-video bg-gray-100 h-full">
                   <Image
                   src={`/assets/experienceimages/${image}`}
                   alt={`Experiencia ${index + 1}`}
                   fill
+                  sizes="(max-width: 768px) 280px, 350px"
                   className="object-cover transition-transform duration-500 hover:scale-105"
                   />
                 </div>

@@ -20,6 +20,7 @@ export const AboutUs: React.FC = () => {
           src="/assets/experienceimages/nosotros.jpeg"
           alt="Sobre Nosotros - Maestro Virtual"
           fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover"
           />
         </div>

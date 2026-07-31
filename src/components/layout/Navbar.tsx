@@ -107,6 +107,7 @@ export default function Navbar() {
         width={160}
         height={50}
         priority
+        style={{ width: "160px", height: "auto" }}
         className="
         object-contain
         transition-transform
