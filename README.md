@@ -226,7 +226,7 @@ npm run lint
 
 ---
 
-## Tests
+## Tests (Jest)
 
 El pipeline cuenta con soporte preparado para pruebas automatizadas.
 
@@ -237,6 +237,20 @@ Comando actual:
 ```bash
 npm test
 ```
+
+## End-to-End Tests (Playwright)
+
+Ejecuta pruebas end-to-end sobre la aplicación simulando la interacción de un usuario real en un navegador.
+
+Estas pruebas verifican que los flujos principales del sistema funcionen correctamente después de cada cambio integrado.
+
+Comando ejecutado:
+
+```bash
+npm run test:e2e
+```
+
+Al finalizar la ejecución del workflow, GitHub Actions genera automáticamente un reporte HTML de Playwright como artefacto para facilitar el análisis de errores en caso de que alguna prueba falle.
 
 ---
 
