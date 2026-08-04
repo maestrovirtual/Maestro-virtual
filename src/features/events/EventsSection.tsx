@@ -5,8 +5,8 @@ import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
 import Container from '@/components/ui/Container';
-import { events } from '@/data/events';
-import { EventModality } from '@/types/event';
+import { events as mockEvents } from '@/data/events';
+import { EventItem, EventModality } from '@/types/event';
 import EventCard from './EventCard';
 import NextEventCountdown from './NextEventCountdown';
 
@@ -18,12 +18,26 @@ const filters: { value: FilterOption; label: string }[] = [
   { value: 'online', label: 'En línea' },
 ];
 
-export default function EventsSection() {
+// 1. Se agregó la interfaz para recibir datos del backend en un futuro
+interface EventsSectionProps {
+  eventosDelBackend?: EventItem[];
+}
+
+export default function EventsSection({ eventosDelBackend }: EventsSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('todos');
 
+  // 2. LA RED DE SEGURIDAD (Ticket 11)
+  // Si hay datos del backend los usamos, si no, usamos los mockEvents
+  const safeEvents = useMemo(() => {
+    return (eventosDelBackend && eventosDelBackend.length > 0)
+      ? eventosDelBackend
+      : mockEvents;
+  }, [eventosDelBackend]);
+
+  // 3. Todo tu código original se mantiene intacto, pero usando "safeEvents"
   const sortedEvents = useMemo(
-    () => [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    []
+    () => [...safeEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    [safeEvents]
   );
 
   const nextEvent = useMemo(() => {
@@ -39,12 +53,12 @@ export default function EventsSection() {
 
   return (
     <section aria-labelledby="events-section-title" className="relative overflow-hidden min-h-screen flex flex-col justify-center bg-bgLight dark:bg-bgDark transition-colors duration-300 py-16 sm:py-20 lg:py-24">
-      
+
       <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-bgLight to-bgLight dark:from-primary/20 dark:via-bgDark dark:to-bgDark" />
       <div className="absolute -top-[350px] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-primary/20 blur-[180px] animate-pulse-slower" />
       <div className="absolute top-20 right-[-300px] w-[700px] h-[700px] rounded-full bg-yellow-400/15 blur-[170px]" />
       <div className="absolute bottom-[350px] left-[-300px] w-[900px] h-[900px] rounded-full bg-green-400/10 blur-[200px]" />
-      
+
       <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <Container size="xl" className="relative z-10">
