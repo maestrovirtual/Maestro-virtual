@@ -3,12 +3,13 @@ import LearningPath from './components/LearningPath';
 import CoursesClient from './components/CoursesClient';
 
 // 1. Renombramos los datos estáticos para identificarlos como el Plan B
-import { courses as mockCourses } from './data/courses';
+// Y traemos la interfaz 'Course' para tipar correctamente los datos
+import { courses as mockCourses, Course } from './data/courses';
 
-// 2. Abrimos la "puerta" para recibir los datos de Eduardo
-// (Nota: Puse 'any[]' temporalmente. Si tienes un tipo como 'CourseItem', cámbialo para que TypeScript esté feliz)
+// 2. Abrimos la "puerta" para recibir los datos del backend
+// (¡Adiós any! Ahora TypeScript sabe exactamente qué forma tiene un curso)
 interface CoursesSectionProps {
-  cursosDelBackend?: any[];
+  cursosDelBackend?: Course[];
 }
 
 export default function CoursesSection({ cursosDelBackend }: CoursesSectionProps) {
