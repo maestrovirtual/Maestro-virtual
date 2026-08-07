@@ -1,0 +1,172 @@
+// ============================================================================
+// MAESTRO VIRTUAL A.C. - MODELO DE DATOS (MV-12)
+// Base de datos: PostgreSQL | ORM: Prisma
+// Apegado estrictamente al frontend en src/types/event.ts y data/courses.ts
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// 1. USUARIOS (Alumnos y Staff)
+// ----------------------------------------------------------------------------
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(USER)
+
+  // Relaciones
+  enrollments  Enrollment[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+enum Role {
+  USER
+  STAFF
+}
+
+// ----------------------------------------------------------------------------
+// 2. CURSOS (Apegado a interface Course de src/features/courses/data/courses.ts)
+// ----------------------------------------------------------------------------
+model Course {
+  id                String               @id @default(uuid())
+  slug              String               @unique
+  title             String
+  shortDescription  String               @db.Text
+  description       String               @db.Text
+  stage             Int                  // 1, 2 o 3 (CourseStage)
+  categories        String[]             // Array de strings como en el mockup
+  type              String               // "Curso" | "Taller" | "Conferencia"
+  featured          Boolean              @default(false)
+  featuredOrder     Int?
+  backgroundPattern String               // "grid" | "waves" | "shapes" | "cards" | "slides" | "growth" | "chat"
+  clickable         Boolean              @default(true)
+  duration          String
+  sessions          Int?
+  hoursPerSession   Int?
+  modality          String
+  participants      String
+  targetAudience    String               @db.Text
+  objective         String               @db.Text
+  requirements      String               @db.Text
+  skills            String[]             // Array de strings con competencias
+  image             String?
+  icon              String?
+  video             String?
+  color             String
+  isActive          Boolean              @default(true)
+
+  // Relaciones
+  testimonials      CourseTestimonial[]
+  enrollments       Enrollment[]
+
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([slug])
+  @@index([stage, type])
+  @@map("courses")
+}
+
+// Submodelo para los testimonios de los cursos (CourseTestimonial)
+model CourseTestimonial {
+  id       String  @id @default(uuid())
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name     String
+  role     String
+  message  String  @db.Text
+  avatar   String?
+  rating   Int?
+
+  @@index([courseId])
+  @@map("course_testimonials")
+}
+
+// ----------------------------------------------------------------------------
+// 3. EVENTOS (Apegado a interface EventItem de src/types/event.ts)
+// ----------------------------------------------------------------------------
+model Event {
+  id           String       @id @default(uuid())
+  title        String
+  category     String       // EventCategory ('zoom', 'excel', etc.)
+  profile      String       @db.Text // Perfil del participante
+  objective    String       @db.Text // Descripción / Objetivo
+  duration     String
+  participants String
+  date         DateTime     // ISO date
+  time         String       // ej: "10:00 - 12:00 hrs"
+  modality     String       // 'presencial' | 'online'
+  location     String?      // Solo si es presencial
+  address      String?      // Solo si es presencial
+  platform     String?      // Solo si es online
+  requirements String?      @db.Text
+  isActive     Boolean      @default(true)
+
+  // Relaciones
+  enrollments  Enrollment[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([date])
+  @@map("events")
+}
+
+// ----------------------------------------------------------------------------
+// 4. INSCRIPCIONES (Relación Usuario <-> Curso/Evento)
+// ----------------------------------------------------------------------------
+model Enrollment {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId  String?
+  course    Course?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  eventId   String?
+  event     Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  status    EnrollmentStatus @default(REGISTERED)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([eventId])
+  @@map("enrollments")
+}
+
+enum EnrollmentStatus {
+  REGISTERED
+  COMPLETED
+  CANCELLED
+}
+
+// ----------------------------------------------------------------------------
+// 5. MENSAJES DE CONTACTO (Bandeja del panel admin)
+// ----------------------------------------------------------------------------
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+  @@map("contact_messages")
+}
