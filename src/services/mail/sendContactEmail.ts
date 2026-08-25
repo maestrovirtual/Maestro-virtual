@@ -3,7 +3,7 @@ import { resend } from "@/lib/mail/resend";
 export async function sendContactEmail() {
   return await resend.emails.send({
     from: "onboarding@resend.dev",
-    to: "maestrovirtualorg@gmail.com",
+    to: process.env.CONTACT_EMAIL!,
     subject: "Prueba de integración - Maestro Virtual",
     html: `
       <h2>¡Integración exitosa! 🎉</h2>
