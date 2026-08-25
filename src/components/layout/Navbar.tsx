@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, Menu, User } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import clsx from "clsx";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
@@ -107,6 +107,7 @@ export default function Navbar() {
         width={160}
         height={50}
         priority
+        style={{ width: "160px", height: "auto" }}
         className="
         object-contain
         transition-transform

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   ArrowUpRight,
   Mail,
@@ -137,6 +137,7 @@ export default function Footer() {
               width={280}
               height={60}
               priority
+              style={{ width: "280px", height: "auto" }}
               className="
               object-contain
               transition-transform

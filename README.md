@@ -1,28 +1,384 @@
 # Maestro Virtual A.C. - Documentación Frontend
 
-## 🚀 Sobre el Proyecto
-Landing page desarrollada para Maestro Virtual A.C., una iniciativa de formación accesible en habilidades digitales orientada al desarrollo de ciudadanía digital[cite: 3]. Este proyecto busca cerrar la brecha digital impulsando la inclusión real y conectando a las personas con nuevas oportunidades[cite: 3].
+## Sobre el Proyecto
 
-## 🛠️ Stack Tecnológico
-* **Framework principal:** Next.js (App Router)
-* **Lenguaje:** TypeScript
-* **Estilos:** Tailwind CSS
-* **Arquitectura UI:** React (Componentes Funcionales Modulares)
+Landing page desarrollada para Maestro Virtual A.C., una iniciativa de formación accesible en habilidades digitales orientada al desarrollo de ciudadanía digital.
 
-## 📂 Decisiones Técnicas y Aprendizajes
+El proyecto busca reducir la brecha digital mediante una plataforma educativa accesible, conectando a las personas con herramientas y oportunidades de aprendizaje.
 
-### 1. Arquitectura Basada en Componentes
-El proyecto sigue el principio de separación de responsabilidades dividiendo la interfaz en piezas pequeñas, independientes y reutilizables.
-* **Implementación:** La vista principal no es un bloque monolítico de código. Se creó un contenedor `HomeSection.tsx` que actúa como orquestador, importando módulos específicos como `<Hero />`, `<AboutUs />`, `<TargetAudience />` e `<Impact />`. Esto permite escalar el proyecto y modificar secciones sin riesgo de romper el layout principal.
+---
 
-### 2. Utility-First CSS (Tailwind CSS)
-En lugar de depender de hojas de estilo globales que pueden causar conflictos, el diseño se construye directamente en el *markup* utilizando clases utilitarias.
-* **Implementación:** Las tarjetas de la sección de audiencia (enfocadas en docentes de educación pública, adultos mayores y personas con discapacidad[cite: 3]) se estilizan directamente con clases como `bg-white`, `rounded-xl` y `shadow-md`. Esto acelera el desarrollo y garantiza un sistema de diseño consistente.
+# Stack Tecnológico
 
-### 3. Estructura y Enrutamiento (Next.js App Router)
-El flujo de navegación aprovecha el sistema de *routing* basado en el sistema de archivos de Next.js.
-* **Implementación:** El archivo `src/app/page.tsx` funciona exclusivamente como el *entry point* de la ruta raíz (`/`). Su única responsabilidad es renderizar el componente de la sección, aislando completamente la lógica de la ruta de la lógica visual.
+- Framework principal: Next.js 16 (App Router)
+- Lenguaje: TypeScript
+- Librería UI: React 19
+- Estilos: Tailwind CSS
+- Animaciones: Framer Motion
+- Iconos: Lucide React
+- Gestión de código: Git + GitHub
+- Deploy frontend: Vercel
 
-### 4. Tipado Estático (TypeScript)
-Se integró TypeScript para añadir una capa de seguridad y predictibilidad al código base, definiendo "contratos" estrictos para los datos.
-* **Implementación:** Los componentes dinámicos (como las tarjetas de características o testimonios) utilizan interfaces de TypeScript para asegurar que siempre reciban las propiedades correctas (ej. un `title` como `string` y un `icon` válido). Esto reduce drásticamente los errores en tiempo de ejecución.
+---
+
+# Arquitectura del Proyecto
+
+El proyecto utiliza una arquitectura basada en componentes reutilizables para facilitar el mantenimiento y escalabilidad.
+
+La estructura principal:
+
+```
+src/
+├── app/
+│   ├── page.tsx
+│   ├── courses/
+│   └── events/
+│
+├── components/
+│   ├── layout/
+│   ├── ui/
+│   └── shared/
+│
+├── sections/
+│   ├── home/
+│   ├── courses/
+│   ├── events/
+│   └── contact/
+│
+├── data/
+├── hooks/
+├── lib/
+└── types/
+```
+
+Cada sección de la aplicación se encuentra separada en módulos independientes para evitar componentes monolíticos y permitir el desarrollo paralelo entre integrantes del equipo.
+
+---
+
+# Estrategia de ramas Git
+
+El proyecto utiliza un flujo Git Flow simplificado para organizar el trabajo del equipo.
+
+La regla principal es:
+
+Ningún integrante debe realizar commits directamente sobre main o develop.
+
+Todo cambio debe entrar mediante Pull Request.
+
+---
+
+## Ramas principales
+
+### main
+
+Contiene la versión estable del proyecto lista para producción.
+
+Los cambios llegan a esta rama únicamente después de la revisión y aprobación del equipo.
+
+---
+
+### develop
+
+Es la rama de integración del proyecto.
+
+Aquí se unen todas las funcionalidades terminadas antes de pasar a producción.
+
+---
+
+## Ramas de trabajo
+
+Cada tarea de Jira debe tener su propia rama.
+
+Formato:
+
+```
+feature/MV-XX-descripcion-corta
+```
+
+Ejemplo:
+
+```
+feature/MV-14-connect-courses-api
+```
+
+Para tareas de configuración, documentación o mantenimiento:
+
+```
+chore/MV-XX-descripcion-corta
+```
+
+Ejemplo:
+
+```
+chore/MV-03-document-git-workflow
+```
+
+---
+
+# Flujo de trabajo Git
+
+## 1. Actualizar develop
+
+Antes de comenzar una nueva tarea:
+
+```bash
+git checkout develop
+git pull origin develop
+```
+
+---
+
+## 2. Crear rama de trabajo
+
+Crear una rama relacionada con la tarea asignada en Jira:
+
+```bash
+git checkout -b feature/MV-XX-descripcion
+```
+
+Ejemplo:
+
+```bash
+git checkout -b feature/MV-14-connect-courses-api
+```
+
+---
+
+## 3. Realizar cambios y commits
+
+Los commits deben utilizar Conventional Commits.
+
+Formato:
+
+```
+tipo(alcance): descripcion corta
+```
+
+Ejemplos:
+
+```
+feat(courses): connect courses API
+```
+
+```
+fix(contact): fix email validation
+```
+
+```
+chore(ci): update github actions workflow
+```
+
+---
+
+## 4. Subir la rama
+
+```bash
+git push origin feature/MV-XX-descripcion
+```
+
+---
+
+## 5. Crear Pull Request
+
+Todo Pull Request debe dirigirse hacia:
+
+```
+develop
+```
+
+El Pull Request debe incluir:
+
+- Número de tarea Jira relacionada.
+- Descripción de los cambios realizados.
+- Pasos para probar la funcionalidad.
+
+---
+
+# CI/CD
+
+El proyecto utiliza GitHub Actions para validar automáticamente los cambios.
+
+Los workflows configurados ejecutan validaciones antes de integrar código al proyecto.
+
+Actualmente se ejecutan:
+
+## Build
+
+Verifica que el proyecto pueda compilar correctamente.
+
+Comando ejecutado:
+
+```bash
+npm run build
+```
+
+---
+
+## Lint
+
+Verifica la calidad y reglas de estilo del código.
+
+Comando ejecutado:
+
+```bash
+npm run lint
+```
+
+---
+
+## Tests (Jest)
+
+El pipeline cuenta con soporte preparado para pruebas automatizadas.
+
+Actualmente las pruebas unitarias se encuentran pendientes de configuración y serán implementadas durante las tareas correspondientes de testing.
+
+Comando actual:
+
+```bash
+npm test
+```
+
+## End-to-End Tests (Playwright)
+
+Ejecuta pruebas end-to-end sobre la aplicación simulando la interacción de un usuario real en un navegador.
+
+Estas pruebas verifican que los flujos principales del sistema funcionen correctamente después de cada cambio integrado.
+
+Comando ejecutado:
+
+```bash
+npm run test:e2e
+```
+
+Al finalizar la ejecución del workflow, GitHub Actions genera automáticamente un reporte HTML de Playwright como artefacto para facilitar el análisis de errores en caso de que alguna prueba falle.
+
+---
+
+# Entornos de despliegue
+
+El proyecto utiliza Vercel para despliegues automáticos.
+
+## Preview
+
+Cada Pull Request genera un ambiente de prueba automático para revisar cambios antes de integrarlos.
+
+---
+
+## Staging
+
+La rama:
+
+```
+develop
+```
+
+representa el ambiente de integración del equipo.
+
+---
+
+## Producción
+
+La rama:
+
+```
+main
+```
+
+representa la versión publicada para usuarios finales.
+
+---
+
+# Gestión del proyecto
+
+El seguimiento del desarrollo se realiza mediante Jira.
+
+Cada tarea tiene asignado un identificador único:
+
+Ejemplo:
+
+```
+MV-14
+```
+
+Este identificador debe aparecer en:
+
+- Nombre de ramas.
+- Pull Requests.
+- Commits relacionados.
+
+Esto permite rastrear fácilmente los cambios realizados durante el desarrollo.
+
+---
+
+# Instalación local
+
+Clonar el repositorio:
+
+```bash
+git clone URL_DEL_REPOSITORIO
+```
+
+Entrar al proyecto:
+
+```bash
+cd maestro-virtual
+```
+
+Instalar dependencias:
+
+```bash
+npm install
+```
+
+Ejecutar ambiente local:
+
+```bash
+npm run dev
+```
+
+La aplicación estará disponible en:
+
+```
+http://localhost:3000
+```
+
+---
+
+# Comandos principales
+
+Ejecutar servidor de desarrollo:
+
+```bash
+npm run dev
+```
+
+Construir proyecto:
+
+```bash
+npm run build
+```
+
+Ejecutar lint:
+
+```bash
+npm run lint
+```
+
+Ejecutar pruebas:
+
+```bash
+npm test
+```
+
+---
+
+# Equipo de desarrollo
+
+Proyecto desarrollado para Maestro Virtual A.C.
+
+Integrantes:
+
+- JP - Frontend
+- Eduardo - Backend
+- Brandon - DevOps / CI/CD
+- Leo - QA
