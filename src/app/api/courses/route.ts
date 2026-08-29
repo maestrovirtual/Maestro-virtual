@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// Importamos el cliente de Prisma usando la ruta que vimos en tu foto
 import prisma from "@/lib/prisma/client";
 
 // ==========================================
@@ -7,18 +6,15 @@ import prisma from "@/lib/prisma/client";
 // ==========================================
 export async function GET() {
   try {
-    // Solo buscamos los cursos que tengan isActive en true
     const courses = await prisma.course.findMany({
       where: {
         isActive: true,
       },
-      // Podemos decirle a Prisma que traiga de una vez los testimonios
       include: {
         testimonials: true,
       },
     });
 
-    // Criterio de aceptación: Retornar código 200 (OK)
     return NextResponse.json(courses, { status: 200 });
   } catch (error) {
     console.error("Error fetching courses:", error);
@@ -36,12 +32,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Criterio de aceptación: Validación básica de datos de entrada
-    // Revisamos que al menos manden el título y el slug (que son obligatorios en tu base de datos)
     if (!body.title || !body.slug) {
       return NextResponse.json(
         { error: "El título y el slug son obligatorios para crear un curso" },
-        { status: 400 } // 400 Bad Request
+        { status: 400 }
       );
     }
 
@@ -49,17 +43,24 @@ export async function POST(request: Request) {
       data: {
         title: body.title,
         slug: body.slug,
+        shortDescription: body.shortDescription || "Descripción pendiente",
         description: body.description || "Descripción pendiente",
-        image: body.image || "https://placeholder.com/image.jpg",
+        stage: body.stage ?? 1, // Int: 1, 2 o 3 según tu schema
         categories: body.categories || [],
-        skills: body.skills || [],
+        type: body.type || "Curso", // "Curso" | "Taller" | "Conferencia"
+        backgroundPattern: body.backgroundPattern || "grid",
         duration: body.duration || "Por definir",
-        backgroundPattern: body.backgroundPattern || "default-pattern",
-        stage: body.stage || "borrador",
+        modality: body.modality || "online",
+        participants: body.participants || "Por definir",
+        targetAudience: body.targetAudience || "Por definir",
+        objective: body.objective || "Por definir",
+        requirements: body.requirements || "Ninguno",
+        skills: body.skills || [],
+        image: body.image || "https://placeholder.com/image.jpg",
+        color: body.color || "#000000",
       },
     });
 
-    // Criterio de aceptación: Retornar código 201 (Created)
     return NextResponse.json(newCourse, { status: 201 });
   } catch (error) {
     console.error("Error creating course:", error);

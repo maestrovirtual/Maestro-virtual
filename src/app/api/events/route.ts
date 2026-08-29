@@ -10,7 +10,6 @@ export async function GET() {
       where: {
         isActive: true,
       },
-      // Ordenamos por fecha para que los más próximos salgan primero
       orderBy: {
         date: 'asc'
       }
@@ -44,13 +43,18 @@ export async function POST(request: Request) {
     const newEvent = await prisma.event.create({
       data: {
         title: body.title,
-        description: body.description || "Descripción pendiente",
-        image: body.image || "https://placeholder.com/event.jpg",
-        date: new Date(body.date), // Convertimos el string a formato Fecha
-        modality: body.modality, // 'IN_PERSON' o 'ONLINE'
+        category: body.category || "general",
+        profile: body.profile || "Por definir",
+        objective: body.objective || "Descripción pendiente",
+        duration: body.duration || "Por definir",
+        participants: body.participants || "Por definir",
+        date: new Date(body.date),
+        time: body.time || "Por definir",
+        modality: body.modality, // 'presencial' | 'online'
         location: body.location || null,
         address: body.address || null,
         platform: body.platform || null,
+        requirements: body.requirements || null,
       },
     });
 
