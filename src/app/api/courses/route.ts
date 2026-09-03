@@ -43,7 +43,6 @@ export async function POST(request: Request) {
       data: {
         title: body.title,
         slug: body.slug,
-        shortDescription: body.shortDescription || "Descripción pendiente",
         description: body.description || "Descripción pendiente",
         stage: body.stage ?? 1, // Int: 1, 2 o 3 según tu schema
         categories: body.categories || [],
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
         targetAudience: body.targetAudience || "Por definir",
         objective: body.objective || "Por definir",
         requirements: body.requirements || "Ninguno",
-        skills: body.skills || [],
+        skills: body.skills || [],  
         image: body.image || "https://placeholder.com/image.jpg",
         color: body.color || "#000000",
       },
