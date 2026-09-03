@@ -40,25 +40,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const newEvent = await prisma.event.create({
-      data: {
-        title: body.title,
-        category: body.category || "general",
-        profile: body.profile || "Por definir",
-        objective: body.objective || "Descripción pendiente",
-        duration: body.duration || "Por definir",
-        participants: body.participants || "Por definir",
-        date: new Date(body.date),
-        time: body.time || "Por definir",
-        modality: body.modality, // 'presencial' | 'online'
-        location: body.location || null,
-        address: body.address || null,
-        platform: body.platform || null,
-        requirements: body.requirements || null,
-        description: body.shortDescription || body.description || "Descripción pendiente",
-        image: body.image || "",
-      },
-    });
+const newEvent = await prisma.event.create({
+  data: {
+    title: body.title,
+    category: body.category || "general",
+    profile: body.profile || "Por definir",
+    objective: body.objective || "Descripción pendiente",
+    duration: body.duration || "Por definir",
+    participants: body.participants || "Por definir",
+    date: new Date(body.date),
+    time: body.time || "Por definir",
+    modality: body.modality === "presencial" ? "IN_PERSON" : "ONLINE",
+    location: body.location || null,
+    address: body.address || null,
+    platform: body.platform || null,
+    requirements: body.requirements || null,
+    description: body.description || "Descripción pendiente",
+    image: body.image || "",
+  },
+});
 
     return NextResponse.json(newEvent, { status: 201 });
   } catch (error) {

@@ -39,26 +39,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const newCourse = await prisma.course.create({
-      data: {
-        title: body.title,
-        slug: body.slug,
-        description: body.description || "Descripción pendiente",
-        stage: body.stage ?? 1, // Int: 1, 2 o 3 según tu schema
-        categories: body.categories || [],
-        type: body.type || "Curso", // "Curso" | "Taller" | "Conferencia"
-        backgroundPattern: body.backgroundPattern || "grid",
-        duration: body.duration || "Por definir",
-        modality: body.modality || "online",
-        participants: body.participants || "Por definir",
-        targetAudience: body.targetAudience || "Por definir",
-        objective: body.objective || "Por definir",
-        requirements: body.requirements || "Ninguno",
-        skills: body.skills || [],  
-        image: body.image || "https://placeholder.com/image.jpg",
-        color: body.color || "#000000",
-      },
-    });
+const newCourse = await prisma.course.create({
+  data: {
+    title: body.title,
+    slug: body.slug,
+    description: body.description || "Descripción pendiente",
+    stage: body.stage ?? "1",
+    categories: body.categories || [],
+    backgroundPattern: body.backgroundPattern || "grid",
+    duration: body.duration || "Por definir",
+    skills: body.skills || [],
+    image: body.image || "https://placeholder.com/image.jpg",
+  },
+});
 
     return NextResponse.json(newCourse, { status: 201 });
   } catch (error) {
