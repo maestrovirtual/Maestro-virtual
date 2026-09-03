@@ -1,5 +1,8 @@
 # Maestro Virtual A.C. - Documentación Frontend
 
+[![CI](https://github.com/Brandonschool349/Maestro-virtual/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Brandonschool349/Maestro-virtual/actions/workflows/ci.yml)
+[![Playwright](https://github.com/Brandonschool349/Maestro-virtual/actions/workflows/playwright.yml/badge.svg?branch=develop)](https://github.com/Brandonschool349/Maestro-virtual/actions/workflows/playwright.yml)
+
 ## Sobre el Proyecto
 
 Landing page desarrollada para Maestro Virtual A.C., una iniciativa de formación accesible en habilidades digitales orientada al desarrollo de ciudadanía digital.
@@ -196,61 +199,21 @@ El Pull Request debe incluir:
 
 # CI/CD
 
-El proyecto utiliza GitHub Actions para validar automáticamente los cambios.
+El proyecto utiliza GitHub Actions para validar automáticamente cada `push` y `pull_request`.
 
-Los workflows configurados ejecutan validaciones antes de integrar código al proyecto.
+El pipeline principal (`ci.yml`) corre tres jobs en paralelo:
 
-Actualmente se ejecutan:
+| Job | Comando | Propósito |
+|-----|---------|-----------|
+| **ESLint** | `npm run lint` | Reglas de estilo y calidad de código |
+| **Unit Tests (Jest)** | `npm run test -- --ci --coverage` | Pruebas unitarias con reporte de cobertura |
+| **Build Next.js** | `npm run build` | Verifica que el proyecto compile |
 
-## Build
+El reporte de cobertura de Jest se sube como artifact (`jest-coverage`) descargable desde la UI de GitHub Actions por 14 días.
 
-Verifica que el proyecto pueda compilar correctamente.
+Un pipeline aparte (`playwright.yml`) ejecuta las pruebas end-to-end con Playwright. Al terminar, sube el reporte HTML como artifact para analizar fallas.
 
-Comando ejecutado:
-
-```bash
-npm run build
-```
-
----
-
-## Lint
-
-Verifica la calidad y reglas de estilo del código.
-
-Comando ejecutado:
-
-```bash
-npm run lint
-```
-
----
-
-## Tests (Jest)
-
-El pipeline cuenta con soporte preparado para pruebas automatizadas.
-
-Actualmente las pruebas unitarias se encuentran pendientes de configuración y serán implementadas durante las tareas correspondientes de testing.
-
-Comando actual:
-
-```bash
-npm test
-```
-
-## End-to-End Tests (Playwright)
-
-Ejecuta pruebas end-to-end sobre la aplicación simulando la interacción de un usuario real en un navegador.
-
-Estas pruebas verifican que los flujos principales del sistema funcionen correctamente después de cada cambio integrado.
-
-Comando ejecutado:
-
-```bash
-npm run test:e2e
-```
-
-Al finalizar la ejecución del workflow, GitHub Actions genera automáticamente un reporte HTML de Playwright como artefacto para facilitar el análisis de errores en caso de que alguna prueba falle.
+Cuando cualquier check queda en rojo, el PR queda marcado como bloqueado (ver [MV-20 CI/CD](./docs/sprints/sprint-1/MV-20-ci-cd/README.md) para el detalle y cómo se activa el bloqueo de merge en `main` y `develop`).
 
 ---
 
