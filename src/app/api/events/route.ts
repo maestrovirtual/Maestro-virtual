@@ -55,6 +55,8 @@ export async function POST(request: Request) {
         address: body.address || null,
         platform: body.platform || null,
         requirements: body.requirements || null,
+        description: body.description || "Descripción pendiente",
+        image: body.image || "",
       },
     });
 
