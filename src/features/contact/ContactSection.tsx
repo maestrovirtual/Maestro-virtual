@@ -12,9 +12,10 @@ const Linkedin = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24"
 const Youtube = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" /><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" /></svg>;
 
 export default function ContactSection() {
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '', website: '' });
   const [isSending, setIsSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
 
   const socials = [
@@ -24,14 +25,27 @@ export default function ContactSection() {
     { name: 'YouTube', icon: Youtube, color: '#FF0000', url: '#' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error ?? 'No se pudo enviar el mensaje');
+      }
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+      setFormData({ name: '', email: '', subject: '', message: '', website: '' });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -93,6 +107,11 @@ export default function ContactSection() {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 sm:p-8 flex flex-col gap-5">
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label htmlFor="website">No rellenar</label>
+                <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border/60 pb-3">
                 <span className="text-sm font-semibold text-muted-foreground w-20">Para:</span>
                 <span className="text-sm font-medium text-text-primary bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-md">contacto@maestrovirtual.org</span>
@@ -117,6 +136,12 @@ export default function ContactSection() {
                 <label htmlFor="message" className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Mensaje:</label>
                 <textarea id="message" name="message" required rows={6} value={formData.message} onChange={handleChange} placeholder="Escribe aquí..." className="w-full resize-none rounded-2xl border border-border bg-surface/50 p-4 text-sm text-text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 backdrop-blur-sm" />
               </div>
+
+              {errorMessage && (
+                <div role="alert" className="rounded-lg border border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/10 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+                  {errorMessage}
+                </div>
+              )}
 
               <div className="mt-4 flex items-center justify-end">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
