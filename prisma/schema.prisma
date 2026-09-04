@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum Role {
@@ -66,19 +64,26 @@ model CourseTestimonial {
 }
 
 model Event {
-  id          String       @id @default(uuid())
-  title       String
-  description String
-  image       String
-  date        DateTime
-  modality    Modality
-  location    String?
-  address     String?
-  platform    String?
-  isActive    Boolean      @default(true)
-  enrollments Enrollment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(uuid())
+  title        String
+  description  String
+  image        String
+  date         DateTime
+  time         String?
+  modality     Modality
+  category     String       @default("general")
+  profile      String?
+  objective    String?
+  duration     String?
+  participants String?
+  requirements String?
+  location     String?
+  address      String?
+  platform     String?
+  isActive     Boolean      @default(true)
+  enrollments  Enrollment[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([date])
 }
