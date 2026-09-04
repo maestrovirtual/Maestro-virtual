@@ -15,6 +15,7 @@ export default function ContactSection() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [isSending, setIsSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
 
   const socials = [
@@ -24,14 +25,27 @@ export default function ContactSection() {
     { name: 'YouTube', icon: Youtube, color: '#FF0000', url: '#' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error ?? 'No se pudo enviar el mensaje');
+      }
       setSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -117,6 +131,12 @@ export default function ContactSection() {
                 <label htmlFor="message" className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Mensaje:</label>
                 <textarea id="message" name="message" required rows={6} value={formData.message} onChange={handleChange} placeholder="Escribe aquí..." className="w-full resize-none rounded-2xl border border-border bg-surface/50 p-4 text-sm text-text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 backdrop-blur-sm" />
               </div>
+
+              {errorMessage && (
+                <div role="alert" className="rounded-lg border border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/10 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+                  {errorMessage}
+                </div>
+              )}
 
               <div className="mt-4 flex items-center justify-end">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
