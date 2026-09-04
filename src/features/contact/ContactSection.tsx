@@ -12,7 +12,7 @@ const Linkedin = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24"
 const Youtube = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" /><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" /></svg>;
 
 export default function ContactSection() {
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '', website: '' });
   const [isSending, setIsSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function ContactSection() {
         throw new Error(data?.error ?? 'No se pudo enviar el mensaje');
       }
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', subject: '', message: '', website: '' });
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -107,6 +107,11 @@ export default function ContactSection() {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 sm:p-8 flex flex-col gap-5">
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label htmlFor="website">No rellenar</label>
+                <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border/60 pb-3">
                 <span className="text-sm font-semibold text-muted-foreground w-20">Para:</span>
                 <span className="text-sm font-medium text-text-primary bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-md">contacto@maestrovirtual.org</span>
