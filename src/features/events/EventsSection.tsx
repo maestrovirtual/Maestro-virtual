@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
+import { CalendarClock, SearchX } from 'lucide-react';
+
 import Container from '@/components/ui/Container';
 import { events as mockEvents } from '@/data/events';
 import { EventItem, EventModality } from '@/types/event';
@@ -26,13 +28,9 @@ interface EventsSectionProps {
 export default function EventsSection({ eventosDelBackend }: EventsSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('todos');
 
-  // 2. LA RED DE SEGURIDAD (Ticket 11)
-  // Si hay datos del backend los usamos, si no, usamos los mockEvents
-  const safeEvents = useMemo(() => {
-    return (eventosDelBackend && eventosDelBackend.length > 0)
-      ? eventosDelBackend
-      : mockEvents;
-  }, [eventosDelBackend]);
+  // Fallback a mocks SOLO cuando el backend no envía datos (undefined).
+  // Un array vacío [] del backend se respeta para que el empty state (MV-27) pueda mostrarse.
+  const safeEvents = useMemo(() => eventosDelBackend ?? mockEvents, [eventosDelBackend]);
 
   // 3. Todo tu código original se mantiene intacto, pero usando "safeEvents"
   const sortedEvents = useMemo(
@@ -79,37 +77,61 @@ export default function EventsSection({ eventosDelBackend }: EventsSectionProps)
           </p>
         </div>
 
-        {nextEvent && <NextEventCountdown event={nextEvent} />}
-
-        <div className="mb-8 flex justify-center gap-2">
-          {filters.map((filter) => (
-            <motion.button
-              key={filter.value}
-              type="button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveFilter(filter.value)}
-              className={clsx(
-                'rounded-full border px-4 py-2 text-sm font-medium outline-none backdrop-blur-md transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 shadow-sm hover:-translate-y-1 hover:shadow-md',
-                activeFilter === filter.value
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
-              )}
-            >
-              {filter.label}
-            </motion.button>
-          ))}
-        </div>
-
-        <div className="mx-auto flex max-w-4xl flex-col gap-6 animate-fadeUp [animation-delay:200ms]">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event) => <EventCard key={event.id} event={event} />)
-          ) : (
-            <p className="text-center text-sm text-text-secondary">
-              No hay eventos disponibles con este filtro.
+        {/* Empty state global: el backend devolvió 0 eventos publicados (MV-27). */}
+        {safeEvents.length === 0 ? (
+          <div className="mx-auto flex max-w-md flex-col items-center py-16 text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <CalendarClock className="h-8 w-8" aria-hidden />
+            </div>
+            <h3 className="font-heading text-2xl font-bold text-text-primary">
+              Aún no hay eventos programados
+            </h3>
+            <p className="mt-3 text-text-secondary">
+              Estamos coordinando las próximas sesiones. Vuelve pronto para ver
+              fechas y modalidades.
             </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            {nextEvent && <NextEventCountdown event={nextEvent} />}
+
+            <div className="mb-8 flex justify-center gap-2">
+              {filters.map((filter) => (
+                <motion.button
+                  key={filter.value}
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveFilter(filter.value)}
+                  className={clsx(
+                    'rounded-full border px-4 py-2 text-sm font-medium outline-none backdrop-blur-md transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 shadow-sm hover:-translate-y-1 hover:shadow-md',
+                    activeFilter === filter.value
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border bg-surface text-text-secondary hover:border-primary hover:text-primary'
+                  )}
+                >
+                  {filter.label}
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="mx-auto flex max-w-4xl flex-col gap-6 animate-fadeUp [animation-delay:200ms]">
+              {filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => <EventCard key={event.id} event={event} />)
+              ) : (
+                <div className="mx-auto flex max-w-md flex-col items-center py-8 text-center">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <SearchX className="h-6 w-6" aria-hidden />
+                  </div>
+                  <p className="text-text-secondary">
+                    No hay eventos disponibles en esta modalidad. Prueba con otro
+                    filtro.
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </Container>
     </section>
   );

@@ -201,3 +201,44 @@ animation:floatSlow 6s ease-in-out infinite;
     floatTitle 5s ease-in-out infinite,
     gradientMove 6s linear infinite;
 }
+
+/* ==========================================================
+   Skeleton shimmer para estados de carga (MV-27)
+   Barrido de luz azul-marca que atraviesa el bloque gris.
+   ========================================================== */
+@keyframes skeletonShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(37, 99, 234, 0.12) 40%,
+    rgba(37, 99, 234, 0.22) 50%,
+    rgba(37, 99, 234, 0.12) 60%,
+    transparent 100%
+  );
+  background-size: 800px 100%;
+  background-repeat: no-repeat;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+  }
+}
+
+/* ==========================================================
+   Splash de primera carga (MV-27)
+   Script inline en root layout marca <html.splash-shown> antes
+   del primer paint si ya se mostró en esta sesión, para evitar
+   el flash de contenido antes de que React monte.
+   ========================================================== */
+html.splash-shown .app-splash-overlay {
+  display: none !important;
+}
