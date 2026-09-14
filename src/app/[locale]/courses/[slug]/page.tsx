@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { courses } from "@/features/courses/data/courses";
-
+// 1. Importamos los datos locales únicamente como Plan B (Red de Seguridad)
+import { courses as mockCourses, type Course } from "@/features/courses/data/courses";
 
 import CourseHero from "@/features/courses/course-details/CourseHero";
 import CourseStats from "@/features/courses/course-details/CoursesStats";
@@ -17,14 +17,36 @@ type CoursePageProps = {
   }>;
 };
 
+// 2. Función asíncrona para buscar el curso específico
+async function fetchCourseData(slug: string) {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const res = await fetch(`${apiUrl}/api/courses`, { 
+      cache: 'no-store' 
+    });
+
+    if (!res.ok) throw new Error("Error de conexión con la API");
+    
+    const allCourses: Course[] = await res.json();
+    
+    // Buscamos el slug dentro de la respuesta de Supabase
+    const apiCourse = allCourses.find((c) => c.slug === slug);
+
+    // 3. LA RED DE SEGURIDAD: Si no existe en la BD, buscamos en el mock
+    return apiCourse || mockCourses.find((c) => c.slug === slug);
+  } catch (error) {
+    // Si la API crashea, caemos en el Plan B en silencio
+    return mockCourses.find((c) => c.slug === slug);
+  }
+}
+
 export default async function CoursePage({
   params,
 }: CoursePageProps) {
   const { slug } = await params;
 
-  const course = courses.find(
-    (course) => course.slug === slug
-  );
+  // 4. Invocamos la función para obtener la data real o el fallback
+  const course = await fetchCourseData(slug);
 
   if (!course) {
     notFound();
@@ -38,18 +60,6 @@ export default async function CoursePage({
       <CourseHighlights course={course} />
       <CourseTestimonials course={course} />
       <CourseCTA course={course} />
-
-
-      {/*
-      
-
-      <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6 py-14 lg:flex-row">
-        <CourseDescription course={course} />
-        <CourseVideo course={course} />
-      </div>
-
-      <CourseHighlights course={course} />
-      */}
     </main>
   );
 }

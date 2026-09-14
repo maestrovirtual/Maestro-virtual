@@ -1,56 +1,54 @@
 import CoursesHero from './components/CoursesHero';
 import LearningPath from './components/LearningPath';
 import CoursesClient from './components/CoursesClient';
-
-// 1. Renombramos los datos estáticos para identificarlos como el Plan B
-// Y traemos la interfaz 'Course' para tipar correctamente los datos
 import { courses as mockCourses, Course } from './data/courses';
+import prisma from "@/lib/prisma/client";
 
-// 2. Abrimos la "puerta" para recibir los datos del backend
-// (¡Adiós any! Ahora TypeScript sabe exactamente qué forma tiene un curso)
-interface CoursesSectionProps {
-  cursosDelBackend?: Course[];
+async function fetchCursosReales(): Promise<Course[]> {
+  try {
+    console.log("🕵️ Consultando BD con límite de tiempo (4s)...");
+
+    // 1. Creamos un cronómetro de 4 segundos (alineado con el timeout del pool)
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout: Supabase tardó demasiado en responder")), 4000)
+    );
+
+    // 2. La consulta real a Prisma
+    const dbQuery = prisma.course.findMany();
+
+    // 3. Competencia: Si la BD tarda más de 4 segundos, gana el timeout y cancela la espera
+    const data = await Promise.race([dbQuery, timeoutPromise]);
+
+    console.log("✅ Cursos recibidos directo de la BD:", (data as any).length);
+    return data as unknown as Course[];
+  } catch (error) {
+    console.error("⚠️ Fallo en la conexión a la BD:", error instanceof Error ? error.message : error);
+    console.log("Activando Red de Seguridad (Mock de cursos) de inmediato.");
+    return []; // Devuelve vacío para que instantáneamente cargue el Mock
+  }
 }
 
-export default function CoursesSection({ cursosDelBackend }: CoursesSectionProps) {
+export default async function CoursesSection() {
+  const cursosAPI = await fetchCursosReales();
 
-  // 3. LA RED DE SEGURIDAD (Ticket 11)
-  // Revisa si el backend manda cursos. Si falla o manda 0, usa tus mockCourses.
-  const safeCourses = (cursosDelBackend && cursosDelBackend.length > 0)
-    ? cursosDelBackend
+  const safeCourses = (cursosAPI && cursosAPI.length > 0)
+    ? cursosAPI
     : mockCourses;
 
   return (
     <section aria-labelledby="courses-section-title">
-
       <CoursesHero />
-
       <div className="py-16 sm:py-20 lg:py-24">
         <div className="mx-auto w-full px-4 sm:px-6 lg:px-8 max-w-7xl space-y-10">
-
-          <section
-            aria-labelledby="courses-categories-title"
-            className="space-y-4"
-          >
-            <h3
-              id="courses-categories-title"
-              className="text-lg font-semibold text-text-primary"
-            >
+          <section aria-labelledby="courses-categories-title" className="space-y-4">
+            <h3 id="courses-categories-title" className="text-lg font-semibold text-text-primary">
               Categorías
             </h3>
-
-            {/* 4. Le inyectamos los safeCourses al componente hijo para que nunca se rompa */}
-            <CoursesClient
-              courses={safeCourses}
-            />
-
+            <CoursesClient courses={safeCourses} />
           </section>
-
           <LearningPath />
-
         </div>
       </div>
-
     </section>
   );
 }
