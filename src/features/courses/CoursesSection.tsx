@@ -14,11 +14,9 @@ interface CoursesSectionProps {
 
 export default function CoursesSection({ cursosDelBackend }: CoursesSectionProps) {
 
-  // 3. LA RED DE SEGURIDAD (Ticket 11)
-  // Revisa si el backend manda cursos. Si falla o manda 0, usa tus mockCourses.
-  const safeCourses = (cursosDelBackend && cursosDelBackend.length > 0)
-    ? cursosDelBackend
-    : mockCourses;
+  // Fallback a mocks SOLO cuando el backend no envía datos (undefined).
+  // Un array vacío [] del backend se respeta para que el empty state (MV-27) pueda mostrarse.
+  const safeCourses = cursosDelBackend ?? mockCourses;
 
   return (
     <section aria-labelledby="courses-section-title">
