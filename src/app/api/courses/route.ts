@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
+import { Stage, CourseType, BackgroundPattern } from "@prisma/client";
+import { stageMap, typeMap, patternMap, resolveEnum } from "@/lib/prisma/course-enums";
 
 // ==========================================
 // GET: Obtener todos los cursos activos
@@ -43,13 +45,34 @@ const newCourse = await prisma.course.create({
   data: {
     title: body.title,
     slug: body.slug,
+    shortDescription: body.shortDescription || "",
     description: body.description || "Descripción pendiente",
-    stage: body.stage ?? "1",
-    categories: body.categories || [],
-    backgroundPattern: body.backgroundPattern || "grid",
-    duration: body.duration || "Por definir",
-    skills: body.skills || [],
     image: body.image || "https://placeholder.com/image.jpg",
+    icon: body.icon || null,
+    video: body.video || null,
+    color: body.color || "#334155",
+    type: resolveEnum(body.type, typeMap, Object.values(CourseType), CourseType.CURSO),
+    stage: resolveEnum(String(body.stage ?? "1"), stageMap, Object.values(Stage), Stage.UNO),
+    categories: body.categories || [],
+    skills: body.skills || [],
+    duration: body.duration || "Por definir",
+    sessions: body.sessions != null ? Number(body.sessions) : null,
+    hoursPerSession:
+      body.hoursPerSession != null ? Number(body.hoursPerSession) : null,
+    modality: body.modality || "Por definir",
+    participants: body.participants || "Por definir",
+    targetAudience: body.targetAudience || "",
+    objective: body.objective || "",
+    requirements: body.requirements || "",
+    backgroundPattern: resolveEnum(
+      body.backgroundPattern,
+      patternMap,
+      Object.values(BackgroundPattern),
+      BackgroundPattern.GRID
+    ),
+    featured: body.featured ?? false,
+    featuredOrder: body.featuredOrder != null ? Number(body.featuredOrder) : null,
+    clickable: body.clickable ?? true,
   },
 });
 
