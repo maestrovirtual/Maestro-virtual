@@ -22,6 +22,28 @@ enum EnrollmentStatus {
   CANCELLED
 }
 
+enum Stage {
+  UNO
+  DOS
+  TRES
+}
+
+enum CourseType {
+  CURSO
+  TALLER
+  CONFERENCIA
+}
+
+enum BackgroundPattern {
+  GRID
+  WAVES
+  SHAPES
+  CARDS
+  SLIDES
+  GROWTH
+  CHAT
+}
+
 model User {
   id             String       @id @default(uuid())
   name           String
@@ -37,15 +59,30 @@ model User {
 
 model Course {
   id                String              @id @default(uuid())
+  slug              String              @unique
   title             String
+  shortDescription  String
   description       String
   image             String
-  categories        String[]            
-  skills            String[]            
+  icon              String?
+  video             String?
+  color             String
+  type              CourseType
+  stage             Stage
+  categories        String[]
+  skills            String[]
   duration          String
-  slug              String              @unique
-  backgroundPattern String
-  stage             String
+  sessions          Int?
+  hoursPerSession   Int?
+  modality          String
+  participants      String
+  targetAudience    String
+  objective         String
+  requirements      String
+  backgroundPattern BackgroundPattern
+  featured          Boolean             @default(false)
+  featuredOrder     Int?
+  clickable         Boolean             @default(true)
   isActive          Boolean             @default(true)
   testimonials      CourseTestimonial[]
   enrollments       Enrollment[]
@@ -53,14 +90,18 @@ model Course {
   updatedAt         DateTime            @updatedAt
 
   @@index([slug])
+  @@index([featured, featuredOrder])
 }
 
 model CourseTestimonial {
-  id        String   @id @default(uuid())
-  content   String
-  author    String
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id       String  @id @default(uuid())
+  message  String
+  name     String
+  role     String
+  avatar   String?
+  rating   Int?
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Event {
