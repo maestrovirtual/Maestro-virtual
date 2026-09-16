@@ -21,20 +21,20 @@ type CoursePageProps = {
 async function fetchCourseData(slug: string) {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const res = await fetch(`${apiUrl}/api/courses`, { 
-      cache: 'no-store' 
+    const res = await fetch(`${apiUrl}/api/courses`, {
+      cache: 'no-store'
     });
 
     if (!res.ok) throw new Error("Error de conexión con la API");
-    
+
     const allCourses: Course[] = await res.json();
-    
+
     // Buscamos el slug dentro de la respuesta de Supabase
     const apiCourse = allCourses.find((c) => c.slug === slug);
 
     // 3. LA RED DE SEGURIDAD: Si no existe en la BD, buscamos en el mock
     return apiCourse || mockCourses.find((c) => c.slug === slug);
-  } catch (error) {
+  } catch {
     // Si la API crashea, caemos en el Plan B en silencio
     return mockCourses.find((c) => c.slug === slug);
   }

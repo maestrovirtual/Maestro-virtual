@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
+import { Stage, CourseType, BackgroundPattern } from "@prisma/client";
+import { stageMap, typeMap, patternMap, resolveEnum } from "@/lib/prisma/course-enums";
 
 // ==========================================
 // GET: Obtener un solo curso por su SLUG
@@ -51,9 +53,28 @@ export async function PUT(
     const id = resolvedParams.id;
     const body = await request.json();
 
+    // Igual que en el POST: si mandan valores "bonitos" (stage: 1,
+    // type: "Curso", backgroundPattern: "waves") los traducimos al enum.
+    // Si no vienen en el body, se dejan fuera del update (no se tocan).
+    const data: Record<string, unknown> = { ...body };
+    if (body.stage !== undefined) {
+      data.stage = resolveEnum(String(body.stage), stageMap, Object.values(Stage), Stage.UNO);
+    }
+    if (body.type !== undefined) {
+      data.type = resolveEnum(body.type, typeMap, Object.values(CourseType), CourseType.CURSO);
+    }
+    if (body.backgroundPattern !== undefined) {
+      data.backgroundPattern = resolveEnum(
+        body.backgroundPattern,
+        patternMap,
+        Object.values(BackgroundPattern),
+        BackgroundPattern.GRID
+      );
+    }
+
     const updatedCourse = await prisma.course.update({
       where: { id: id },
-      data: body,
+      data,
     });
 
     return NextResponse.json(updatedCourse, { status: 200 });

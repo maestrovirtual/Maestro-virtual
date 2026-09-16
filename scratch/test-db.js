@@ -1,3 +1,4 @@
+/* eslint-disable */
 const { Client } = require('pg');
 
 const url = process.env.DATABASE_URL || "postgresql://postgres.fqwgfgppvlqgddxvzixu:ud6aTXrnm0gbasm8@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true";

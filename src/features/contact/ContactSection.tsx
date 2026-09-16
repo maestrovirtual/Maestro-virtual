@@ -2,14 +2,10 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, FileText, MessageSquare, User, MessageCircle } from 'lucide-react';
-import type { SVGProps } from "react";
+import { Mail, Send, FileText, MessageSquare, User } from 'lucide-react';
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaTiktok } from 'react-icons/fa6';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
-
-const Instagram = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>;
-const Linkedin = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></svg>;
-const Youtube = (p: SVGProps<SVGSVGElement>) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" /><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" /></svg>;
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
@@ -17,11 +13,14 @@ export default function ContactSection() {
   const [submitted, setSubmitted] = useState(false);
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
 
+  // Mismos 5 links del Footer para consistencia. LinkedIn queda "#"
+  // (pendiente) y se detecta abajo para no hacer preventDefault feo.
   const socials = [
-    { name: 'WhatsApp', icon: MessageCircle, color: '#25D366', url: '#' },
-    { name: 'Instagram', icon: Instagram, color: '#E1306C', url: '#' },
-    { name: 'LinkedIn', icon: Linkedin, color: '#0077B5', url: '#' },
-    { name: 'YouTube', icon: Youtube, color: '#FF0000', url: '#' },
+    { name: 'YouTube',   icon: FaYoutube,    color: '#FF0000', url: 'https://youtube.com/@maestrovirtuala.c?si=r_4YnZdUnWquj8_P' },
+    { name: 'Instagram', icon: FaInstagram,  color: '#E1306C', url: 'https://www.instagram.com/maestrovirtual.a.c?stkn=bzQ3d3RxeXhraXYx&utm_source=qr' },
+    { name: 'Facebook',  icon: FaFacebookF,  color: '#1877F2', url: 'https://www.facebook.com/share/1EHNdrExY7/?mibextid=wwXIfr' },
+    { name: 'LinkedIn',  icon: FaLinkedinIn, color: '#0077B5', url: '#' },
+    { name: 'TikTok',    icon: FaTiktok,     color: '#000000', url: 'https://www.tiktok.com/@maestrovirtual.a.c?_r=1&_t=ZS-99XYM39hgw6' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -132,27 +131,36 @@ export default function ContactSection() {
           <div className="border-t border-border/40 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-3xl">
             <span className="text-sm font-medium text-muted-foreground">También puedes encontrarnos en:</span>
             <div className="flex items-center gap-3">
-              {socials.map((social) => (
-                <motion.a
-                  key={social.name}
-                  href={social.url}
-                  title={social.name} 
-                  onMouseEnter={() => setHoveredSocial(social.name)}
-                  onMouseLeave={() => setHoveredSocial(null)}
-                  whileHover={{ scale: 1.15, y: -3 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 rounded-full bg-white dark:bg-white/5 flex items-center justify-center border border-border/60 dark:border-white/10 shadow-sm transition-all duration-300"
-                  style={{
-                    backgroundColor: hoveredSocial === social.name ? social.color + '15' : '',
-                    borderColor: hoveredSocial === social.name ? social.color : '',
-                  }}
-                >
-                  <social.icon 
-                    className="h-5 w-5 transition-colors duration-300 text-slate-500 dark:text-slate-400" 
-                    style={{ color: hoveredSocial === social.name ? social.color : undefined }}
-                  />
-                </motion.a>
-              ))}
+              {socials.map((social) => {
+                const isPending = social.url === '#';
+                return (
+                  <motion.a
+                    key={social.name}
+                    href={social.url}
+                    aria-label={social.name}
+                    title={isPending ? `${social.name} · Próximamente` : social.name}
+                    {...(isPending
+                      ? { onClick: (e: React.MouseEvent) => e.preventDefault(), 'aria-disabled': true }
+                      : { target: '_blank', rel: 'noopener noreferrer' })}
+                    onMouseEnter={() => setHoveredSocial(social.name)}
+                    onMouseLeave={() => setHoveredSocial(null)}
+                    whileHover={isPending ? undefined : { scale: 1.15, y: -3 }}
+                    whileTap={isPending ? undefined : { scale: 0.95 }}
+                    className={`w-10 h-10 rounded-full bg-white dark:bg-white/5 flex items-center justify-center border border-border/60 dark:border-white/10 shadow-sm transition-all duration-300 ${
+                      isPending ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
+                    style={{
+                      backgroundColor: hoveredSocial === social.name && !isPending ? social.color + '15' : '',
+                      borderColor: hoveredSocial === social.name && !isPending ? social.color : '',
+                    }}
+                  >
+                    <social.icon
+                      className="h-5 w-5 transition-colors duration-300 text-slate-500 dark:text-slate-400"
+                      style={{ color: hoveredSocial === social.name && !isPending ? social.color : undefined }}
+                    />
+                  </motion.a>
+                );
+              })}
             </div>
           </div>
 

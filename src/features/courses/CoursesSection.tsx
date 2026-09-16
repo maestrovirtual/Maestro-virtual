@@ -19,7 +19,7 @@ async function fetchCursosReales(): Promise<Course[]> {
     // 3. Competencia: Si la BD tarda más de 4 segundos, gana el timeout y cancela la espera
     const data = await Promise.race([dbQuery, timeoutPromise]);
 
-    console.log("✅ Cursos recibidos directo de la BD:", (data as any).length);
+    console.log("✅ Eventos recibidos directo de la BD:", Array.isArray(data) ? data.length : 0);
     return data as unknown as Course[];
   } catch (error) {
     console.error("⚠️ Fallo en la conexión a la BD:", error instanceof Error ? error.message : error);
@@ -31,9 +31,9 @@ async function fetchCursosReales(): Promise<Course[]> {
 export default async function CoursesSection() {
   const cursosAPI = await fetchCursosReales();
 
-  const safeCourses = (cursosAPI && cursosAPI.length > 0)
-    ? cursosAPI
-    : mockCourses;
+  // Fallback a mocks SOLO cuando el backend no envía datos (undefined).
+  // Un array vacío [] del backend se respeta para que el empty state (MV-27) pueda mostrarse.
+  const safeCourses = cursosAPI ?? mockCourses;
 
   return (
     <section aria-labelledby="courses-section-title">
