@@ -30,6 +30,7 @@ jobs:
         run: npm ci
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
       - name: Run ESLint
@@ -53,6 +54,7 @@ jobs:
         run: npm ci
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
       - name: Run Jest tests with coverage
@@ -84,6 +86,7 @@ jobs:
         run: npm ci
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
       - name: Build application
