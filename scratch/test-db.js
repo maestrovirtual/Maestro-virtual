@@ -1,9 +1,9 @@
 /* eslint-disable */
 const { Client } = require('pg');
 
-const url = process.env.DATABASE_URL || "postgresql://postgres.fqwgfgppvlqgddxvzixu:ud6aTXrnm0gbasm8@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
+const url = process.env.DATABASE_URL;
 
-const client = new Client({ connectionString: url, connectionTimeoutMillis: 3000 });
+const client = new Client({ connectionString: url, connectionTimeoutMillis: 4000 });
 
 client.connect()
   .then(() => {
@@ -16,7 +16,7 @@ client.connect()
   })
   .catch(err => {
     console.error("Connection error on 6543:", err.message);
-    const client5432 = new Client({ connectionString: "postgresql://postgres.fqwgfgppvlqgddxvzixu:ud6aTXrnm0gbasm8@aws-0-us-east-1.pooler.supabase.com:5432/postgres", connectionTimeoutMillis: 3000 });
+    const client5432 = new Client({ connectionString: process.env.DIRECT_URL, connectionTimeoutMillis: 4000 });
     client5432.connect()
       .then(() => {
         console.log("Connected successfully to 5432");

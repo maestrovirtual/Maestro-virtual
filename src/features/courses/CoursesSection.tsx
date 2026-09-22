@@ -4,7 +4,7 @@ import CoursesClient from './components/CoursesClient';
 import { courses as mockCourses, Course } from './data/courses';
 import prisma from "@/lib/prisma/client";
 
-async function fetchCursosReales(): Promise<Course[]> {
+async function fetchCursosReales(): Promise<Course[] | null> {
   try {
     console.log("🕵️ Consultando BD con límite de tiempo (4s)...");
 
@@ -24,7 +24,7 @@ async function fetchCursosReales(): Promise<Course[]> {
   } catch (error) {
     console.error("⚠️ Fallo en la conexión a la BD:", error instanceof Error ? error.message : error);
     console.log("Activando Red de Seguridad (Mock de cursos) de inmediato.");
-    return []; // Devuelve vacío para que instantáneamente cargue el Mock
+    return null; // Devuelve null para que instantáneamente cargue el Mock
   }
 }
 
