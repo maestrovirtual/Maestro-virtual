@@ -42,10 +42,10 @@ const featuredCourses = courses
 
 export default function CoursesHero() {
 
-return (
+  return (
 
-<section
-className="
+    <section
+      className="
 relative
 overflow-hidden
 min-h-screen
@@ -56,13 +56,13 @@ dark:bg-bgDark
 transition-colors
 duration-300
 "
->
+    >
 
 
-{/* BACKGROUND */}
+      {/* BACKGROUND */}
 
-<div
-className="
+      <div
+        className="
 absolute
 inset-0
 bg-gradient-to-b
@@ -73,12 +73,12 @@ dark:from-primary/20
 dark:via-bgDark
 dark:to-bgDark
 "
-/>
+      />
 
 
 
-<div
-className="
+      <div
+        className="
 absolute
 -top-[350px]
 left-1/2
@@ -90,12 +90,12 @@ bg-primary/20
 blur-[180px]
 animate-pulse-slower
 "
-/>
+      />
 
 
 
-<div
-className="
+      <div
+        className="
 absolute
 top-20
 right-[-300px]
@@ -105,12 +105,12 @@ rounded-full
 bg-yellow-400/15
 blur-[170px]
 "
-/>
+      />
 
 
 
-<div
-className="
+      <div
+        className="
 absolute
 bottom-[350px]
 left-[-300px]
@@ -120,31 +120,31 @@ rounded-full
 bg-green-400/10
 blur-[200px]
 "
-/>
+      />
 
 
 
-{/* GRID */}
+      {/* GRID */}
 
-<div
-className="
+      <div
+        className="
 absolute
 inset-0
 opacity-[0.035]
 bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)]
 bg-[size:48px_48px]
 "
-/>
+      />
 
 
 
-{/* PARTICLES */}
+      {/* PARTICLES */}
 
-<div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none">
 
 
-<div
-className="
+        <div
+          className="
 absolute
 top-[20%]
 left-[12%]
@@ -154,11 +154,11 @@ rounded-full
 bg-blue-400
 shadow-[0_0_20px_rgba(59,130,246,.8)]
 "
-/>
+        />
 
 
-<div
-className="
+        <div
+          className="
 absolute
 top-[35%]
 right-[15%]
@@ -168,11 +168,11 @@ rounded-full
 bg-green-400
 shadow-[0_0_20px_rgba(52,211,153,.8)]
 "
-/>
+        />
 
 
-<div
-className="
+        <div
+          className="
 absolute
 bottom-[35%]
 left-[20%]
@@ -181,11 +181,11 @@ h-2
 rounded-full
 bg-yellow-400
 "
-/>
+        />
 
 
-<div
-className="
+        <div
+          className="
 absolute
 bottom-[30%]
 right-[25%]
@@ -194,17 +194,17 @@ h-2
 rounded-full
 bg-red-400
 "
-/>
+        />
 
 
-</div>
+      </div>
 
 
 
-{/* SMOOTH END */}
+      {/* SMOOTH END */}
 
-<div
-className="
+      <div
+        className="
 absolute
 bottom-0
 left-0
@@ -217,11 +217,11 @@ to-bgLight
 dark:via-bgDark/80
 dark:to-bgDark
 "
-/>
+      />
 
 
-<div
-className="
+      <div
+        className="
 absolute
 bottom-0
 left-0
@@ -232,13 +232,13 @@ from-transparent
 to-bgLight
 dark:to-bgDark
 "
-/>
+      />
 
 
 
 
-<div
-className="
+      <div
+        className="
 relative
 z-10
 max-w-7xl
@@ -248,19 +248,19 @@ pt-24
 pb-20
 w-full
 "
->
+      >
 
 
-<div
-className="
+        <div
+          className="
 max-w-5xl
 mx-auto
 text-center
 animate-fadeUp
 "
->
-    <div
-className="
+        >
+          <div
+            className="
 inline-flex
 items-center
 gap-2
@@ -276,33 +276,33 @@ text-primary
 mb-8
 backdrop-blur-md
 "
->
+          >
 
-<Sparkles size={16}/>
+            <Sparkles size={16} />
 
-Aprende a tu ritmo
+            Aprende a tu ritmo
 
-</div>
-
-
+          </div>
 
 
 
-<h1
-className="
+
+
+          <h1
+            className="
 text-6xl
 md:text-7xl
 leading-[1.05]
 tracking-normal
 font-heading
 "
->
+          >
 
-Aprende tecnología
+            Aprende tecnología
 
 
-<span
-className="
+            <span
+              className="
 block
 bg-gradient-to-r
 from-blue-700
@@ -313,21 +313,21 @@ text-transparent
 bg-[length:200%_auto]
 animate-gradient
 "
->
+            >
 
-de forma sencilla
+              de forma sencilla
 
-</span>
-
-
-</h1>
+            </span>
 
 
+          </h1>
 
 
 
-<p
-className="
+
+
+          <p
+            className="
 mt-8
 text-lg
 md:text-xl
@@ -335,36 +335,36 @@ text-muted-foreground
 max-w-2xl
 mx-auto
 "
->
+          >
 
-Aprende herramientas digitales paso a paso
-para comunicarte, crear y disfrutar la tecnología.
+            Aprende herramientas digitales paso a paso
+            para comunicarte, crear y disfrutar la tecnología.
 
-</p>
-
-
+          </p>
 
 
 
 
-{/* TOOLS */}
 
-<div
-className="
+
+          {/* TOOLS */}
+
+          <div
+            className="
 mt-10
 flex
 justify-center
 flex-wrap
 gap-4
 "
->
+          >
 
-{
-tools.map(tool => (
+            {
+              tools.map(tool => (
 
-<span
-key={tool.name}
-className={`
+                <span
+                  key={tool.name}
+                  className={`
 rounded-full
 border
 px-5
@@ -379,39 +379,39 @@ hover:-translate-y-1
 hover:shadow-md
 ${tool.color}
 `}
->
+                >
 
-{tool.name}
+                  {tool.name}
 
-</span>
+                </span>
 
-))
-}
+              ))
+            }
 
-</div>
-
-
-
-</div>
+          </div>
 
 
 
-{/* FEATURED COURSES */}
+        </div>
 
-<div
-  className="
+
+
+        {/* FEATURED COURSES */}
+
+        <div
+          className="
     mt-20
     mb-10
     text-center
     max-w-2xl
     mx-auto
   "
->
+        >
 
 
 
-<h2
-  className="
+          <h2
+            className="
     text-4xl
     md:text-5xl
     font-heading
@@ -425,20 +425,20 @@ ${tool.color}
     bg-[length:200%_100%]
     animate-title-gradient
   "
->
-    Cursos destacados
-  </h2>
+          >
+            Cursos destacados
+          </h2>
 
 
 
-</div>
+        </div>
 
 
 
-{/* FEATURED COURSES */}
+        {/* FEATURED COURSES */}
 
-<div
-  className="
+        <div
+          className="
     grid
     grid-cols-1
     md:grid-cols-2
@@ -448,21 +448,21 @@ ${tool.color}
     animate-fadeUp
     [animation-delay:200ms]
   "
->
+        >
 
-  {featuredCourses.map((course) => (
-    <FeaturedCourseCard
-      key={course.id}
-      course={course}
-    />
-  ))}
+          {featuredCourses.map((course) => (
+            <FeaturedCourseCard
+              key={course.id}
+              course={course}
+            />
+          ))}
 
-</div>
-</div>
+        </div>
+      </div>
 
 
-</section>
+    </section>
 
-);
+  );
 
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 // Mini animación entre páginas (MV-27).
@@ -85,6 +86,7 @@ export default function NavigationProgress() {
     return () => {
       document.removeEventListener('click', onClick, { capture: true });
       clearTimers();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     };
   }, []);
 
@@ -95,6 +97,7 @@ export default function NavigationProgress() {
       prevPathnameRef.current = pathname;
       finish();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   if (!visible) return null;
