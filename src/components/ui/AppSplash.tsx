@@ -27,17 +27,20 @@ export default function AppSplash() {
   //   - `visible` controla si se renderiza. El auto-hide sólo lo
   //     toca a él, dejando `id` intacto para no colisionar con
   //     keys previamente usadas si el usuario clickea rápido.
-  const [state, setState] = useState<SplashState>(() => {
-    if (typeof window === 'undefined') return { id: 1, visible: true };
-    const wasShown = !!sessionStorage.getItem(STORAGE_KEY);
-    return { id: wasShown ? 0 : 1, visible: !wasShown };
-  });
+  const [state, setState] = useState<SplashState>({ id: 1, visible: true });
 
   // Cada session visible: marca sessionStorage y agenda auto-hide.
   // Deps en `id` (no `visible`) para que el timer arranque en cada
   // nuevo session (incluyendo replays), y no dispare de más al
   // limpiar `visible`.
   useEffect(() => {
+    // Si ya se mostró antes en esta sesión, lo desmontamos inmediatamente.
+    // El script en el head evita que haya un parpadeo visual.
+    if (state.id === 1 && sessionStorage.getItem(STORAGE_KEY)) {
+      setState({ id: 0, visible: false });
+      return;
+    }
+
     if (!state.visible) return;
     sessionStorage.setItem(STORAGE_KEY, '1');
     const timer = setTimeout(() => {

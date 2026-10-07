@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+
 import AppSplash from "@/components/ui/AppSplash";
 import NavigationProgress from "@/components/ui/NavigationProgress";
 import ContactRevealOverlay from "@/components/ui/ContactRevealOverlay";
@@ -29,8 +28,8 @@ export default async function LocaleLayout({
 
   // Validar idioma permitido
   if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
-  notFound();
-  
+    notFound();
+
   }
 
   // Cargar traducciones
@@ -49,13 +48,7 @@ export default async function LocaleLayout({
       <ContactRevealOverlay />
       <RouteTransitionFlash />
 
-      <Navbar />
-
-      <main className="flex-1">
-        {children}
-      </main>
-
-      <Footer />
+      {children}
     </NextIntlClientProvider>
   );
 }
