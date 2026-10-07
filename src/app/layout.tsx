@@ -1,3 +1,4 @@
+import Script from "next/script";
 import "./globals.css";
 
 // Script blocking que corre ANTES del primer paint.
@@ -19,7 +20,11 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: splashPrehideScript }} />
+        <Script
+          id="splash-prehide"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: splashPrehideScript }}
+        />
       </head>
       <body>{children}</body>
     </html>
