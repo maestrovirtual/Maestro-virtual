@@ -7,6 +7,7 @@ import AdminSidebar from '@/features/admin/components/AdminSidebar';
 
 export default function AdminCoursesPage() {
     // Datos mockeados temporales para ver el diseño (Eduardo los conectará a Prisma luego)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockCourses: any[] = [
         {
             id: "1",

@@ -37,6 +37,7 @@ export default function AppSplash() {
     // Si ya se mostró antes en esta sesión, lo desmontamos inmediatamente.
     // El script en el head evita que haya un parpadeo visual.
     if (state.id === 1 && sessionStorage.getItem(STORAGE_KEY)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ id: 0, visible: false });
       return;
     }
