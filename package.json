@@ -11,13 +11,15 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "staff:create": "tsx prisma/create-staff.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@swc/helpers": "^0.5.23",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
+    "jose": "^6.2.12",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
     "next-intl": "^4.13.4",
