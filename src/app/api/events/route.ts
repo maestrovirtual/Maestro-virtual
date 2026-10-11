@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
+import { requireStaffApi } from "@/lib/auth/dal";
 
 // ==========================================
 // GET: Obtener todos los eventos activos
@@ -30,6 +31,9 @@ export async function GET() {
 // ==========================================
 export async function POST(request: Request) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const body = await request.json();
 
     // Criterio de aceptación: Validación básica

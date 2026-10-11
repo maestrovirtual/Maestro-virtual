@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
 import { Stage, CourseType, BackgroundPattern } from "@prisma/client";
 import { stageMap, typeMap, patternMap, resolveEnum } from "@/lib/prisma/course-enums";
+import { requireStaffApi } from "@/lib/auth/dal";
 
 // ==========================================
 // GET: Obtener todos los cursos activos
@@ -32,6 +33,9 @@ export async function GET() {
 // ==========================================
 export async function POST(request: Request) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const body = await request.json();
 
     if (!body.title || !body.slug) {

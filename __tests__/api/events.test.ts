@@ -2,8 +2,16 @@
  * @jest-environment node
  */
 
+import { NextResponse } from 'next/server';
 import { GET, POST } from '../../src/app/api/events/route';
 import prisma from '../../src/lib/prisma/client';
+import { requireStaffApi } from '../../src/lib/auth/dal';
+
+// Mock de la verificacion de staff (MV-33)
+jest.mock('../../src/lib/auth/dal', () => ({
+  __esModule: true,
+  requireStaffApi: jest.fn(),
+}));
 
 // Mock de Prisma para Eventos
 jest.mock(
@@ -24,6 +32,7 @@ describe('API /api/events', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, 'error').mockImplementation(() => {});
+    (requireStaffApi as jest.Mock).mockResolvedValue(null); // Por defecto: peticion de un staff
   });
 
   afterEach(() => {
@@ -118,6 +127,23 @@ describe('API /api/events', () => {
 
       expect(response.status).toBe(500);
       expect(data).toEqual({ error: 'Error interno al crear el evento' });
+    });
+
+    test.each([
+      [401, 'No autenticado'],
+      [403, 'No autorizado'],
+    ])('Debe retornar %i sin crear el evento si quien lo pide no es staff', async (status, error) => {
+      (requireStaffApi as jest.Mock).mockResolvedValue(NextResponse.json({ error }, { status }));
+
+      const req = new Request('http://localhost:3000/api/events', {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Evento', date: '2026-10-10', modality: 'online' }),
+      });
+
+      const response = await POST(req);
+
+      expect(response.status).toBe(status);
+      expect(prisma.event.create).not.toHaveBeenCalled();
     });
   });
 });
