@@ -2,37 +2,11 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import prisma from "@/lib/prisma/client";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { SESSION_COOKIE } from "@/lib/auth/session";
+import { checkStaffToken, type StaffUser } from "@/lib/auth/staff";
 
-export type StaffUser = {
-  id: string;
-  name: string;
-  email: string;
-};
-
-type StaffCheck =
-  | { status: "ok"; user: StaffUser }
-  | { status: "unauthenticated" }
-  | { status: "forbidden" };
-
-// Verificacion con autoridad: ademas de validar la firma de la cookie,
-// vuelve a leer el rol en la base de datos. Asi, si a alguien le quitan
-// el rol STAFF, pierde el acceso aunque su cookie siga vigente.
-async function checkStaff(): Promise<StaffCheck> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const session = await verifySessionToken(token);
-  if (!session) return { status: "unauthenticated" };
-  if (session.role !== "STAFF") return { status: "forbidden" };
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { id: true, name: true, email: true, role: true },
-  });
-  if (!user) return { status: "unauthenticated" };
-  if (user.role !== "STAFF") return { status: "forbidden" };
-
-  return { status: "ok", user: { id: user.id, name: user.name, email: user.email } };
+async function checkStaff() {
+  return checkStaffToken((await cookies()).get(SESSION_COOKIE)?.value);
 }
 
 // Para paginas y layouts del panel.
