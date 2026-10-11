@@ -16,6 +16,16 @@ test.describe('MV-33: Autenticacion de staff para el panel', () => {
   }
 
   test('Debe mantener al visitante en el login con credenciales incorrectas', async ({ page }) => {
+    // Se simula la respuesta del API para no depender de la base de datos del
+    // entorno de CI. El login real contra la BD lo cubre __tests__/api/auth.test.ts.
+    await page.route('**/api/auth/login', (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Correo o contraseña incorrectos' }),
+      })
+    );
+
     await page.goto('/es/staff/login');
 
     await page.getByLabel('Correo').fill('no-existe@maestrovirtual.test');
