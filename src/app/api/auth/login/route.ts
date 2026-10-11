@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Solicitud invalida" }, { status: 400 });
+    return NextResponse.json({ error: "Solicitud inválida" }, { status: 400 });
   }
 
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error en el login de staff:", error);
     return NextResponse.json(
-      { error: "Error interno del servidor al iniciar sesion" },
+      { error: "Error interno del servidor al iniciar sesión" },
       { status: 500 }
     );
   }

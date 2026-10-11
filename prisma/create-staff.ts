@@ -76,7 +76,7 @@ function askHidden(question: string): Promise<string> {
 async function readPassword(): Promise<string> {
   if (process.env.STAFF_PASSWORD) return process.env.STAFF_PASSWORD;
 
-  const password = await askHidden(`Contraseña (minimo ${MIN_PASSWORD_LENGTH} caracteres): `);
+  const password = await askHidden(`Contraseña (mínimo ${MIN_PASSWORD_LENGTH} caracteres): `);
   const confirmation = await askHidden("Confirma la contraseña: ");
   if (password !== confirmation) throw new Error("Las contraseñas no coinciden.");
   return password;
@@ -91,7 +91,7 @@ async function main() {
   });
 
   const email = (values.email ?? (await ask("Correo del staff: "))).trim().toLowerCase();
-  if (!EMAIL_PATTERN.test(email)) throw new Error(`Correo invalido: "${email}"`);
+  if (!EMAIL_PATTERN.test(email)) throw new Error(`Correo inválido: "${email}"`);
 
   const existing = await prisma.user.findUnique({
     where: { email },

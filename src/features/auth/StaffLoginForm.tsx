@@ -41,7 +41,7 @@ export default function StaffLoginForm({ locale }: { locale: string }) {
       }
 
       const data = await response.json().catch(() => null);
-      setError(data?.error ?? "No se pudo iniciar sesion. Intenta de nuevo.");
+      setError(data?.error ?? "No se pudo iniciar sesión. Intenta de nuevo.");
     } catch {
       setError("No se pudo conectar con el servidor. Intenta de nuevo.");
     }
@@ -63,12 +63,14 @@ export default function StaffLoginForm({ locale }: { locale: string }) {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">Acceso para staff</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Panel de administracion de Maestro Virtual
+            Panel de administración de Maestro Virtual
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {/* method="post": si se envia antes de que cargue JavaScript, las
+          credenciales no terminan en la URL. */}
+      <form onSubmit={handleSubmit} method="post" className="space-y-4" noValidate>
         <div className="space-y-1.5">
           <label htmlFor="staff-email" className="text-sm font-medium text-text-primary">
             Correo
@@ -103,7 +105,7 @@ export default function StaffLoginForm({ locale }: { locale: string }) {
 
         <Button type="submit" size="lg" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
-          {submitting ? "Entrando..." : "Iniciar sesion"}
+          {submitting ? "Entrando..." : "Iniciar sesión"}
         </Button>
       </form>
     </Card>
