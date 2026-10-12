@@ -14,7 +14,7 @@ export interface Course {
   id: string;
   slug: string;
 
-    testimonials?: CourseTestimonial[];
+  testimonials?: CourseTestimonial[];
 
   title: string;
   shortDescription: string;
@@ -36,7 +36,7 @@ export interface Course {
   | "chat";
 
   clickable: boolean;
-  
+
 
   duration: string;
   sessions?: number;
@@ -65,31 +65,31 @@ export const courses: Course[] = [
 
     title: "Zoom",
 
-        testimonials:[
-    {
-      name:"María González",
-      role:"Docente de primaria",
-      message:
-        "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
-        rating:5
-    },
+    testimonials: [
+      {
+        name: "María González",
+        role: "Docente de primaria",
+        message:
+          "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
+        rating: 5
+      },
 
-    {
-      name:"Carlos Ramírez",
-      role:"Coordinador académico",
-      message:
-        "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
-        rating:5
-    },
+      {
+        name: "Carlos Ramírez",
+        role: "Coordinador académico",
+        message:
+          "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
+        rating: 5
+      },
 
-    {
-      name:"Ana López",
-      role:"Docente secundaria",
-      message:
-        "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
-        rating:4
-    },
-  ],
+      {
+        name: "Ana López",
+        role: "Docente secundaria",
+        message:
+          "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
+        rating: 4
+      },
+    ],
 
     shortDescription:
       "Aprende a utilizar Zoom para impartir clases, reuniones y videoconferencias de forma profesional.",
@@ -150,31 +150,31 @@ export const courses: Course[] = [
 
     title: "Microsoft Excel",
 
-    testimonials:[
-    {
-      name:"María González",
-      role:"Docente de primaria",
-      message:
-        "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
-        rating:5
-    },
+    testimonials: [
+      {
+        name: "María González",
+        role: "Docente de primaria",
+        message:
+          "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
+        rating: 5
+      },
 
-    {
-      name:"Carlos Ramírez",
-      role:"Coordinador académico",
-      message:
-        "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
-        rating:5
-    },
+      {
+        name: "Carlos Ramírez",
+        role: "Coordinador académico",
+        message:
+          "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
+        rating: 5
+      },
 
-    {
-      name:"Ana López",
-      role:"Docente secundaria",
-      message:
-        "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
-        rating:4
-    },
-  ],
+      {
+        name: "Ana López",
+        role: "Docente secundaria",
+        message:
+          "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
+        rating: 4
+      },
+    ],
 
     shortDescription:
       "Aprende a organizar información y crear hojas de cálculo para facilitar el trabajo docente.",
@@ -235,31 +235,31 @@ export const courses: Course[] = [
 
     title: "Microsoft PowerPoint",
 
-        testimonials:[
-    {
-      name:"María González",
-      role:"Docente de primaria",
-      message:
-        "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
-        rating:5
-    },
+    testimonials: [
+      {
+        name: "María González",
+        role: "Docente de primaria",
+        message:
+          "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
+        rating: 5
+      },
 
-    {
-      name:"Carlos Ramírez",
-      role:"Coordinador académico",
-      message:
-        "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
-        rating:5
-    },
+      {
+        name: "Carlos Ramírez",
+        role: "Coordinador académico",
+        message:
+          "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
+        rating: 5
+      },
 
-    {
-      name:"Ana López",
-      role:"Docente secundaria",
-      message:
-        "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
-        rating:4
-    },
-  ],
+      {
+        name: "Ana López",
+        role: "Docente secundaria",
+        message:
+          "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
+        rating: 4
+      },
+    ],
 
     shortDescription:
       "Diseña presentaciones claras y atractivas para apoyar tus clases y exposiciones.",
@@ -321,31 +321,31 @@ export const courses: Course[] = [
 
     title: "Canva",
 
-        testimonials:[
-    {
-      name:"María González",
-      role:"Docente de primaria",
-      message:
-        "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
-        rating:5
-    },
+    testimonials: [
+      {
+        name: "María González",
+        role: "Docente de primaria",
+        message:
+          "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
+        rating: 5
+      },
 
-    {
-      name:"Carlos Ramírez",
-      role:"Coordinador académico",
-      message:
-        "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
-        rating:5
-    },
+      {
+        name: "Carlos Ramírez",
+        role: "Coordinador académico",
+        message:
+          "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
+        rating: 5
+      },
 
-    {
-      name:"Ana López",
-      role:"Docente secundaria",
-      message:
-        "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
-        rating:4
-    },
-  ],
+      {
+        name: "Ana López",
+        role: "Docente secundaria",
+        message:
+          "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
+        rating: 4
+      },
+    ],
 
     shortDescription:
       "Crea material visual moderno para clases, presentaciones y comunicación institucional.",
@@ -406,31 +406,31 @@ export const courses: Course[] = [
 
     title: "Google Classroom",
 
-        testimonials:[
-    {
-      name:"María González",
-      role:"Docente de primaria",
-      message:
-        "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
-        rating:5
-    },
+    testimonials: [
+      {
+        name: "María González",
+        role: "Docente de primaria",
+        message:
+          "El curso me ayudó a organizar mejor la información de mis alumnos y crear herramientas más eficientes para mi trabajo.",
+        rating: 5
+      },
 
-    {
-      name:"Carlos Ramírez",
-      role:"Coordinador académico",
-      message:
-        "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
-        rating:5
-    },
+      {
+        name: "Carlos Ramírez",
+        role: "Coordinador académico",
+        message:
+          "Aprendimos a utilizar Excel de una manera práctica y enfocada a nuestras necesidades educativas.",
+        rating: 5
+      },
 
-    {
-      name:"Ana López",
-      role:"Docente secundaria",
-      message:
-        "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
-        rating:4
-    },
-  ],
+      {
+        name: "Ana López",
+        role: "Docente secundaria",
+        message:
+          "Ahora puedo crear hojas de cálculo que facilitan mucho mi organización diaria.",
+        rating: 4
+      },
+    ],
 
     shortDescription:
       "Organiza clases, tareas y recursos utilizando Google Classroom y Google for Education.",
@@ -486,359 +486,359 @@ export const courses: Course[] = [
   },
 
   {
-  id: "herramientas-digitales-emprendimiento",
-  slug: "herramientas-digitales-emprendimiento",
+    id: "herramientas-digitales-emprendimiento",
+    slug: "herramientas-digitales-emprendimiento",
 
-  title: "Emprendimiento y autoempleo",
+    title: "Emprendimiento y autoempleo",
 
-  shortDescription:
-    "Desarrolla competencias digitales para utilizar plataformas tecnológicas enfocadas al emprendimiento y generación de ingresos.",
+    shortDescription:
+      "Desarrolla competencias digitales para utilizar plataformas tecnológicas enfocadas al emprendimiento y generación de ingresos.",
 
-  description:
-    "Taller orientado al desarrollo de habilidades tecnológicas básicas y uso de plataformas digitales que permitan fortalecer la autonomía económica e inclusión laboral de personas con discapacidad.",
+    description:
+      "Taller orientado al desarrollo de habilidades tecnológicas básicas y uso de plataformas digitales que permitan fortalecer la autonomía económica e inclusión laboral de personas con discapacidad.",
 
-  stage: 2,
+    stage: 2,
 
-  categories: ["Emprendimiento"],
+    categories: ["Emprendimiento"],
 
-  type: "Taller",
+    type: "Taller",
 
-  featured: false,
+    featured: false,
 
-  backgroundPattern: "growth",
+    backgroundPattern: "growth",
 
-  clickable: true,
+    clickable: true,
 
 
-  duration: "5 módulos",
+    duration: "5 módulos",
 
-  sessions: 5,
+    sessions: 5,
 
-  hoursPerSession: 2,
+    hoursPerSession: 2,
 
 
-  modality: "Presencial u Online",
+    modality: "Presencial u Online",
 
-  participants: "30 personas por grupo aprox.",
+    participants: "30 personas por grupo aprox.",
 
 
-  targetAudience:
-    "Personas mayores de edad con discapacidades interesadas en el emprendimiento y autoempleo.",
+    targetAudience:
+      "Personas mayores de edad con discapacidades interesadas en el emprendimiento y autoempleo.",
 
 
-  objective:
-    "Fortalecer competencias digitales para utilizar herramientas tecnológicas que permitan desarrollar oportunidades de emprendimiento y generación de ingresos.",
+    objective:
+      "Fortalecer competencias digitales para utilizar herramientas tecnológicas que permitan desarrollar oportunidades de emprendimiento y generación de ingresos.",
 
 
-  requirements:
-    "Preferentemente proyector y micrófono.",
+    requirements:
+      "Preferentemente proyector y micrófono.",
 
 
-  skills:[
-    "Uso básico de herramientas digitales",
-    "Manejo de plataformas tecnológicas",
-    "Autonomía digital",
-    "Emprendimiento"
-  ],
+    skills: [
+      "Uso básico de herramientas digitales",
+      "Manejo de plataformas tecnológicas",
+      "Autonomía digital",
+      "Emprendimiento"
+    ],
 
 
-  image:
-    "/images/courses/emprendimiento-digital.jpg",
+    image:
+      "/images/courses/emprendimiento-digital.jpg",
 
-  icon:
-    "/icons/emprendimiento.webp",
+    icon:
+      "/icons/emprendimiento.webp",
 
 
-  video:"",
+    video: "",
 
 
-  color:"#334155",
-},
+    color: "#334155",
+  },
 
 
-{
-  id:"aprendiendo-tecnologias",
+  {
+    id: "aprendiendo-tecnologias",
 
-  slug:"aprendiendo-tecnologias",
+    slug: "aprendiendo-tecnologias",
 
 
-  title:"Aprendiendo a usar las tecnologías",
+    title: "Aprendiendo a usar las tecnologías",
 
 
-  shortDescription:
-    "Curso diseñado para aprender herramientas tecnológicas básicas y mejorar la comunicación digital.",
+    shortDescription:
+      "Curso diseñado para aprender herramientas tecnológicas básicas y mejorar la comunicación digital.",
 
 
-  description:
-    "Curso enfocado en alfabetización tecnológica básica, uso de dispositivos móviles, navegación segura en internet y comunicación digital mediante herramientas como WhatsApp para favorecer la autonomía e integración social.",
+    description:
+      "Curso enfocado en alfabetización tecnológica básica, uso de dispositivos móviles, navegación segura en internet y comunicación digital mediante herramientas como WhatsApp para favorecer la autonomía e integración social.",
 
 
-  stage:2,
+    stage: 2,
 
 
-  categories: ["Inclusión digital"],
+    categories: ["Inclusión digital"],
 
 
-  type:"Curso",
+    type: "Curso",
 
 
-  featured:true,
+    featured: true,
 
-  featuredOrder: 1,
+    featuredOrder: 1,
 
 
-  backgroundPattern:"chat",
+    backgroundPattern: "chat",
 
 
-  clickable:true,
+    clickable: true,
 
 
-  duration:"1 curso",
+    duration: "1 curso",
 
-  sessions:1,
+    sessions: 1,
 
-  hoursPerSession:2,
+    hoursPerSession: 2,
 
 
-  modality:
-    "Presencial u Online",
+    modality:
+      "Presencial u Online",
 
 
-  participants:
-    "30 personas por grupo aprox.",
+    participants:
+      "30 personas por grupo aprox.",
 
 
 
-  targetAudience:
-    "Adultos mayores con dificultad en el uso de herramientas tecnológicas actuales que desean aprender a utilizarlas.",
+    targetAudience:
+      "Adultos mayores con dificultad en el uso de herramientas tecnológicas actuales que desean aprender a utilizarlas.",
 
 
 
-  objective:
-    "Desarrollar habilidades digitales básicas para utilizar dispositivos móviles, navegar de manera segura y comunicarse mediante herramientas tecnológicas.",
+    objective:
+      "Desarrollar habilidades digitales básicas para utilizar dispositivos móviles, navegar de manera segura y comunicarse mediante herramientas tecnológicas.",
 
 
 
-  requirements:
-    "Preferentemente proyector y micrófono.",
+    requirements:
+      "Preferentemente proyector y micrófono.",
 
 
 
-  skills:[
-    "Uso de dispositivos móviles",
-    "Comunicación digital",
-    "Seguridad en internet",
-    "Herramientas tecnológicas básicas"
-  ],
+    skills: [
+      "Uso de dispositivos móviles",
+      "Comunicación digital",
+      "Seguridad en internet",
+      "Herramientas tecnológicas básicas"
+    ],
 
 
-  image:
-    "/images/courses/aprendiendo-tecnologias.jpg",
+    image:
+      "/images/courses/aprendiendo-tecnologias.jpg",
 
 
-  icon:
-    "/icons/whatsapp.webp",
+    icon:
+      "/icons/whatsapp.webp",
 
 
-  video:"",
+    video: "",
 
 
-  color:"#50f5a5",
-}, 
+    color: "#50f5a5",
+  },
 
-{
-id:"tramites-digitales",
+  {
+    id: "tramites-digitales",
 
-slug:"tramites-digitales",
+    slug: "tramites-digitales",
 
-title:"Orientación para Trámites Digitales",
+    title: "Orientación para Trámites Digitales",
 
-shortDescription:
-"Aprende a utilizar plataformas gubernamentales, banca electrónica y servicios públicos digitales.",
+    shortDescription:
+      "Aprende a utilizar plataformas gubernamentales, banca electrónica y servicios públicos digitales.",
 
 
-description:
-"Taller orientado a capacitar a los beneficiarios en el uso de plataformas digitales gubernamentales, servicios públicos y herramientas electrónicas, promoviendo el acceso efectivo a derechos y servicios digitales.",
+    description:
+      "Taller orientado a capacitar a los beneficiarios en el uso de plataformas digitales gubernamentales, servicios públicos y herramientas electrónicas, promoviendo el acceso efectivo a derechos y servicios digitales.",
 
 
-stage:3,
+    stage: 3,
 
-categories: ["Inclusión digital"],
+    categories: ["Inclusión digital"],
 
-type:"Taller",
+    type: "Taller",
 
-featured:false,
+    featured: false,
 
-backgroundPattern:"cards",
+    backgroundPattern: "cards",
 
-clickable:false,
+    clickable: false,
 
 
-duration:"Próximamente",
+    duration: "Próximamente",
 
-sessions:undefined,
+    sessions: undefined,
 
-hoursPerSession:undefined,
+    hoursPerSession: undefined,
 
 
-modality:"Por definir",
+    modality: "Por definir",
 
-participants:"Próximamente",
+    participants: "Próximamente",
 
 
-targetAudience:
-"Personas interesadas en aprender a utilizar servicios digitales públicos y financieros.",
+    targetAudience:
+      "Personas interesadas en aprender a utilizar servicios digitales públicos y financieros.",
 
 
-objective:
-"Fortalecer el acceso a servicios digitales mediante herramientas gubernamentales y plataformas electrónicas.",
+    objective:
+      "Fortalecer el acceso a servicios digitales mediante herramientas gubernamentales y plataformas electrónicas.",
 
 
-requirements:
-"Por definir.",
+    requirements:
+      "Por definir.",
 
 
-skills:[
-"Servicios digitales",
-"Gestión en línea",
-"Uso de plataformas digitales"
-],
+    skills: [
+      "Servicios digitales",
+      "Gestión en línea",
+      "Uso de plataformas digitales"
+    ],
 
 
-image:"/images/courses/tramites-digitales.jpg",
-icon:"",
+    image: "/images/courses/tramites-digitales.jpg",
+    icon: "",
 
-video:"",
+    video: "",
 
-color:"#6366F1"
-},
+    color: "#6366F1"
+  },
 
 
 
-{
-id:"tecnologias-apoyo-discapacidad",
+  {
+    id: "tecnologias-apoyo-discapacidad",
 
-slug:"tecnologias-apoyo-discapacidad",
+    slug: "tecnologias-apoyo-discapacidad",
 
-title:"Inclusión Digital y Tecnologías de Apoyo para Personas con Discapacidad",
+    title: "Inclusión Digital y Tecnologías de Apoyo para Personas con Discapacidad",
 
-shortDescription:
-"Conoce herramientas de accesibilidad y tecnologías adaptadas para mejorar la autonomía digital.",
+    shortDescription:
+      "Conoce herramientas de accesibilidad y tecnologías adaptadas para mejorar la autonomía digital.",
 
 
-description:
-"Taller enfocado en el uso de herramientas de accesibilidad, aplicaciones adaptadas y tecnologías de apoyo que faciliten la comunicación, autonomía y participación social.",
+    description:
+      "Taller enfocado en el uso de herramientas de accesibilidad, aplicaciones adaptadas y tecnologías de apoyo que faciliten la comunicación, autonomía y participación social.",
 
 
-stage:3,
+    stage: 3,
 
-categories: ["Accesibilidad"],
+    categories: ["Accesibilidad"],
 
-type:"Taller",
+    type: "Taller",
 
-featured:false,
+    featured: false,
 
-backgroundPattern:"shapes",
+    backgroundPattern: "shapes",
 
-clickable:false,
+    clickable: false,
 
 
-duration:"Próximamente",
+    duration: "Próximamente",
 
-modality:"Por definir",
+    modality: "Por definir",
 
-participants:"Próximamente",
+    participants: "Próximamente",
 
 
-targetAudience:
-"Personas con discapacidad interesadas en herramientas digitales de apoyo.",
+    targetAudience:
+      "Personas con discapacidad interesadas en herramientas digitales de apoyo.",
 
 
-objective:
-"Promover el uso de tecnologías accesibles para mejorar la autonomía e inclusión digital.",
+    objective:
+      "Promover el uso de tecnologías accesibles para mejorar la autonomía e inclusión digital.",
 
 
-requirements:
-"Por definir.",
+    requirements:
+      "Por definir.",
 
 
-skills:[
-"Accesibilidad digital",
-"Tecnologías de apoyo",
-"Comunicación digital"
-],
+    skills: [
+      "Accesibilidad digital",
+      "Tecnologías de apoyo",
+      "Comunicación digital"
+    ],
 
 
-image:"/images/courses/tecnologias-apoyo-discapacidad.jpg",
-icon:"",
+    image: "/images/courses/tecnologias-apoyo-discapacidad.jpg",
+    icon: "",
 
-video:"",
+    video: "",
 
-color:"#8B5CF6"
-},
+    color: "#8B5CF6"
+  },
 
 
 
-{
-id:"seguridad-linea",
+  {
+    id: "seguridad-linea",
 
-slug:"seguridad-linea",
+    slug: "seguridad-linea",
 
-title:"Seguridad en Línea y Protección de Datos Personales",
+    title: "Seguridad en Línea y Protección de Datos Personales",
 
-shortDescription:
-"Aprende prácticas seguras para proteger tu información y navegar en internet.",
+    shortDescription:
+      "Aprende prácticas seguras para proteger tu información y navegar en internet.",
 
 
-description:
-"Taller enfocado en prevención de fraudes digitales, riesgos en internet y protección de información personal para fortalecer hábitos seguros en tecnología.",
+    description:
+      "Taller enfocado en prevención de fraudes digitales, riesgos en internet y protección de información personal para fortalecer hábitos seguros en tecnología.",
 
 
-stage:3,
+    stage: 3,
 
-categories: ["Ciberseguridad"],
+    categories: ["Ciberseguridad"],
 
-type:"Taller",
+    type: "Taller",
 
-featured:false,
+    featured: false,
 
-backgroundPattern:"grid",
+    backgroundPattern: "grid",
 
-clickable:false,
+    clickable: false,
 
 
-duration:"Próximamente",
+    duration: "Próximamente",
 
-modality:"Por definir",
+    modality: "Por definir",
 
-participants:"Próximamente",
+    participants: "Próximamente",
 
 
-targetAudience:
-"Personas interesadas en aprender seguridad digital básica.",
+    targetAudience:
+      "Personas interesadas en aprender seguridad digital básica.",
 
 
-objective:
-"Desarrollar hábitos seguros para proteger información personal y prevenir riesgos digitales.",
+    objective:
+      "Desarrollar hábitos seguros para proteger información personal y prevenir riesgos digitales.",
 
 
-requirements:
-"Por definir.",
+    requirements:
+      "Por definir.",
 
 
-skills:[
-"Seguridad digital",
-"Protección de datos",
-"Navegación segura"
-],
+    skills: [
+      "Seguridad digital",
+      "Protección de datos",
+      "Navegación segura"
+    ],
 
 
-image:"/images/courses/seguridad-linea.jpg",
-icon:"",
+    image: "/images/courses/seguridad-linea.jpg",
+    icon: "",
 
-video:"",
+    video: "",
 
-color:"#EF4444"
-}
+    color: "#EF4444"
+  }
 ];
 

@@ -7,12 +7,15 @@ import clsx from "clsx";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
+import { replayAppSplash } from "@/components/ui/AppSplash";
+import { triggerContactReveal } from "@/components/ui/ContactRevealOverlay";
 
+// "Contacto" se movió al CTA principal (botón azul con circle-reveal).
+// Preparando también para restringir "Cursos" a usuarios autenticados.
 const navLinks = [
   { label: "Inicio", href: "/" },
   { label: "Cursos", href: "/courses" },
   { label: "Eventos", href: "/events" },
-  { label: "Contacto", href: "/contact" },
 ];
 
 export default function Navbar() {
@@ -53,11 +56,13 @@ export default function Navbar() {
           `
           pointer-events-auto
 
+          relative
+
           flex
           items-center
           justify-between
 
-          rounded-[28px]
+          rounded-[24px]
 
           border
 
@@ -68,7 +73,7 @@ export default function Navbar() {
 
           scrolled
             ? `
-              h-[68px]
+              h-[58px]
 
               bg-primary/10
 
@@ -79,7 +84,7 @@ export default function Navbar() {
               shadow-[0_18px_45px_rgba(15,23,42,.12)]
             `
             : `
-              h-[74px]
+              h-[73px]
 
               bg-white/28
 
@@ -95,6 +100,8 @@ export default function Navbar() {
 
     <Link
       href="/"
+      onClick={() => replayAppSplash()}
+      data-skip-transition-flash="true"
       className="
       group
       flex
@@ -104,10 +111,10 @@ export default function Navbar() {
       <Image
         src="/images/logo/maestrovirtual.webp"
         alt="Maestro Virtual"
-        width={160}
-        height={50}
+        width={144}
+        height={44}
         priority
-        style={{ width: "160px", height: "auto" }}
+        style={{ width: "144px", height: "auto" }}
         className="
         object-contain
         transition-transform
@@ -117,10 +124,21 @@ export default function Navbar() {
       />
     </Link>
 
-        {/* Links */}
+        {/* Links — posicionamiento absoluto para quedar centrados
+            en el viewport (no en el espacio sobrante entre logo
+            y botones). */}
 
         <nav
           className="
+          pointer-events-auto
+
+          absolute
+          left-1/2
+          top-1/2
+
+          -translate-x-1/2
+          -translate-y-1/2
+
           hidden
           md:flex
           items-center
@@ -179,7 +197,101 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
 
-          {/* Login / Perfil (Preparado para autenticación) */}
+          {/* Iniciar sesión — pastilla ghost que espeja el lenguaje
+              visual del círculo de perfil (misma altura, mismo glass).
+              Aún no navega: sólo tooltip "Próximamente". */}
+          <button
+            type="button"
+            className={clsx(
+              `
+              group
+
+              relative
+
+              hidden
+              md:inline-flex
+
+              items-center
+
+              h-10
+              px-4
+
+              rounded-full
+
+              border
+
+              text-[14px]
+              font-medium
+
+              backdrop-blur-xl
+
+              transition-all
+              duration-300
+
+              hover:-translate-y-0.5
+              hover:shadow-md
+              `,
+              scrolled
+                ? `
+                  bg-white/10
+                  border-white/15
+                  text-text-primary
+                  hover:bg-white/20
+                  hover:border-primary/30
+                `
+                : `
+                  bg-white/40
+                  border-white/35
+                  text-text-primary
+                  hover:bg-white/70
+                  hover:border-primary/40
+                `
+            )}
+          >
+            Iniciar sesión
+
+            {/* Tooltip Próximamente */}
+
+            <span
+              className="
+              pointer-events-none
+
+              absolute
+              top-[calc(100%+12px)]
+              left-1/2
+
+              -translate-x-1/2
+              translate-y-1
+
+              whitespace-nowrap
+
+              rounded-full
+
+              bg-text-primary
+
+              px-3
+              py-1.5
+
+              text-[11px]
+              font-medium
+              text-white
+
+              opacity-0
+
+              shadow-xl
+
+              transition-all
+              duration-300
+
+              group-hover:translate-y-0
+              group-hover:opacity-100
+              "
+            >
+              Próximamente
+            </span>
+          </button>
+
+          {/* Perfil (Preparado para autenticación) */}
 
           <button
             className={clsx(
@@ -191,8 +303,8 @@ export default function Navbar() {
               hidden
               md:flex
 
-              h-11
-              w-11
+              h-10
+              w-10
 
               items-center
               justify-center
@@ -303,7 +415,16 @@ export default function Navbar() {
             </span>
           </button>
 
-          <Link href="/courses">
+          {/* CTA principal: Contacto con circle-reveal.
+              (Antes "Explorar cursos" — se movió porque próximamente el
+              catálogo de cursos requerirá login.) */}
+          <Link
+            href="/contact"
+            onClick={(e) => {
+              e.preventDefault();
+              triggerContactReveal(e.clientX, e.clientY, "/contact");
+            }}
+          >
             <Button
               variant="primary"
               size="sm"
@@ -316,7 +437,7 @@ export default function Navbar() {
                 md:inline-flex
 
                 rounded-full
-               
+
 
                 shadow-lg
 
@@ -329,7 +450,7 @@ export default function Navbar() {
                 scrolled ? "px-4" : "px-5"
               )}
             >
-              Explorar cursos
+              Contáctanos
 
               <ArrowRight
                 className="
@@ -349,14 +470,14 @@ export default function Navbar() {
             className="
             inline-flex
 
-            h-11
-            w-11
+            h-10
+            w-10
 
             items-center
             justify-center
 
             rounded-full
-            
+
 
             border
             border-white/50

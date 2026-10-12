@@ -59,7 +59,7 @@ describe('Componente UI: Button', () => {
     render(<Button variant="danger">Eliminar Cuenta</Button>);
 
     const buttonElement = screen.getByRole('button', { name: /eliminar cuenta/i });
-    expect(buttonElement).toHaveClass('bg-brand-red');
+    expect(buttonElement).toHaveClass("bg-red-600");
   });
 
   it('debe aplicar correctamente la variante "outline" y tamaño "sm"', () => {

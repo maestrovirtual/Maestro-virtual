@@ -22,7 +22,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     'bg-transparent text-primary hover:bg-background border border-primary',
 
   danger:
-    'bg-brand-red text-white hover:brightness-90 border border-brand-red',
+    'bg-red-600 text-white hover:bg-red-700 border border-red-600',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

@@ -1,3 +1,5 @@
+"use client";
+
 import { Link } from "@/i18n/navigation";
 import {
   ArrowUpRight,
@@ -11,9 +13,11 @@ import {
   FaInstagram,
   FaLinkedinIn,
   FaYoutube,
+  FaTiktok,
 } from "react-icons/fa6";
 
 import Container from "@/components/ui/Container";
+import { replayAppSplash } from "@/components/ui/AppSplash";
 
 const exploreLinks = [
   { label: "Inicio", href: "/" },
@@ -35,22 +39,33 @@ const contactLinks = [
   { label: "Contacto", href: "/contact" },
 ];
 
+// LinkedIn se queda con href="#" (pendiente). El componente lo detecta
+// y lo pinta como no-clickeable con un tooltip "Próximamente".
 const socialLinks = [
   {
-    icon: FaFacebookF,
-    href: "#",
+    label: "YouTube",
+    icon: FaYoutube,
+    href: "https://youtube.com/@maestrovirtuala.c?si=r_4YnZdUnWquj8_P",
   },
   {
+    label: "Instagram",
     icon: FaInstagram,
-    href: "#",
+    href: "https://www.instagram.com/maestrovirtual.a.c?stkn=bzQ3d3RxeXhraXYx&utm_source=qr",
   },
   {
+    label: "Facebook",
+    icon: FaFacebookF,
+    href: "https://www.facebook.com/share/1EHNdrExY7/?mibextid=wwXIfr",
+  },
+  {
+    label: "LinkedIn",
     icon: FaLinkedinIn,
     href: "#",
   },
   {
-    icon: FaYoutube,
-    href: "#",
+    label: "TikTok",
+    icon: FaTiktok,
+    href: "https://www.tiktok.com/@maestrovirtual.a.c?_r=1&_t=ZS-99XYM39hgw6",
   },
 ];
 
@@ -126,6 +141,8 @@ export default function Footer() {
           <div className="space-y-3">
             <Link
             href="/"
+            onClick={() => replayAppSplash()}
+            data-skip-transition-flash="true"
             className="
             inline-flex
             items-center
@@ -200,50 +217,62 @@ export default function Footer() {
             </div>
 
             <div className="flex gap-3">
-              {socialLinks.map(({ icon: Icon }, index) => (
-                <button
-                  key={index}
-                  className="
-                  group
+              {socialLinks.map(({ icon: Icon, href, label }) => {
+                const isPending = href === "#";
 
-                  flex
-                  h-11
-                  w-11
+                return (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    title={isPending ? `${label} · Próximamente` : label}
+                    {...(isPending
+                      ? { onClick: (e) => e.preventDefault(), "aria-disabled": true }
+                      : { target: "_blank", rel: "noopener noreferrer" })}
+                    className={`
+                    group
 
-                  items-center
-                  justify-center
+                    flex
+                    h-11
+                    w-11
 
-                  rounded-full
+                    items-center
+                    justify-center
 
-                  border
-                  border-white/40
+                    rounded-full
 
-                  bg-white/70
+                    border
+                    border-white/40
 
-                  shadow-md
+                    bg-white/70
 
-                  backdrop-blur-xl
+                    shadow-md
 
-                  transition-all
-                  duration-300
+                    backdrop-blur-xl
 
-                  hover:-translate-y-1
-                  hover:border-primary
-                  hover:bg-primary
-                  "
-                >
-                  <Icon
-                    className="
-                    h-4
-                    w-4
+                    transition-all
+                    duration-300
 
-                    transition-colors
+                    ${
+                      isPending
+                        ? "cursor-not-allowed opacity-60"
+                        : "hover:-translate-y-1 hover:border-primary hover:bg-primary"
+                    }
+                    `}
+                  >
+                    <Icon
+                      className={`
+                      h-4
+                      w-4
 
-                    group-hover:text-white
-                    "
-                  />
-                </button>
-              ))}
+                      transition-colors
+
+                      ${isPending ? "" : "group-hover:text-white"}
+                      `}
+                    />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
