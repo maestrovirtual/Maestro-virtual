@@ -145,6 +145,7 @@ model ContactMessage {
   id        String   @id @default(uuid())
   name      String
   email     String
+  subject   String   @default("")
   message   String
   isRead    Boolean  @default(false)
   date      DateTime @default(now())

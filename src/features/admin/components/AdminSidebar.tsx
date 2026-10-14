@@ -1,14 +1,11 @@
-import Link from 'next/link';
+"use client";
+
+import { Link, usePathname } from '@/i18n/navigation';
 import Image from 'next/image';
 import { BookOpen, CalendarDays, MessageSquare, LogOut, LayoutDashboard } from 'lucide-react';
 import clsx from 'clsx';
-// Puedes usar el hook de navegación de Next.js si necesitas saber qué ruta está activa
-// import { usePathname } from 'next/navigation';
-
 export default function AdminSidebar() {
-    // const pathname = usePathname();
-    // Simulemos la ruta activa por ahora para la vista de Cursos
-    const currentPath = '/admin/cursos';
+    const currentPath = usePathname();
 
     const navLinks = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -37,12 +34,13 @@ export default function AdminSidebar() {
             <nav className="flex-1 space-y-1 p-4">
                 {navLinks.map((link) => {
                     const Icon = link.icon;
-                    const isActive = currentPath === link.href;
+                    const isActive = link.href === '/admin' ? currentPath === link.href : currentPath.startsWith(link.href);
 
                     return (
                         <Link
                             key={link.name}
                             href={link.href}
+                            aria-current={isActive ? "page" : undefined}
                             className={clsx(
                                 'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors',
                                 isActive

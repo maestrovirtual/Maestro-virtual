@@ -1,0 +1,57 @@
+/** @jest-environment node */
+import { NextResponse } from 'next/server';
+import { GET } from '@/app/api/admin/messages/route';
+import { PATCH } from '@/app/api/admin/messages/[id]/route';
+import prisma from '@/lib/prisma/client';
+import { requireStaffApi } from '@/lib/auth/dal';
+
+jest.mock('@/lib/auth/dal', () => ({ requireStaffApi: jest.fn() }));
+jest.mock('@/lib/prisma/client', () => ({ __esModule: true, default: {
+  contactMessage: { findMany: jest.fn(), count: jest.fn(), updateMany: jest.fn() },
+  $transaction: jest.fn(),
+} }));
+const context = { params: Promise.resolve({ id: 'message-1' }) };
+const request = (body: unknown) => new Request('http://localhost/api/admin/messages/message-1', {
+  method: 'PATCH', body: JSON.stringify(body),
+});
+beforeEach(() => {
+  jest.clearAllMocks();
+  (requireStaffApi as jest.Mock).mockResolvedValue(null);
+});
+test.each([401, 403])('blocks unauthorized reads and writes (%s)', async status => {
+  (requireStaffApi as jest.Mock).mockResolvedValue(NextResponse.json({ error: 'Denied' }, { status }));
+  expect((await GET(new Request('http://localhost/api/admin/messages'))).status).toBe(status);
+  expect((await PATCH(request({ isRead: true }), context)).status).toBe(status);
+  expect(prisma.contactMessage.findMany).not.toHaveBeenCalled();
+  expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
+});
+test('lists newest first with deterministic order and pagination', async () => {
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[{ id: 'message-1', isRead: false }], 21]);
+  const response = await GET(new Request('http://localhost/api/admin/messages?page=2'));
+  expect(await response.json()).toEqual({ messages: [{ id: 'message-1', isRead: false }], total: 21, page: 2, pageSize: 20 });
+  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
+  expect(response.headers.get('cache-control')).toBe('private, no-store');
+});
+test.each(['0', '-1', '1.5', 'abc', '100001'])('rejects invalid page %s', async page => {
+  expect((await GET(new Request(`http://localhost/api/admin/messages?page=${page}`))).status).toBe(400);
+});
+test.each([true, false])('persists read state %s', async isRead => {
+  (prisma.contactMessage.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+  const response = await PATCH(request({ isRead }), context);
+  expect(await response.json()).toEqual({ id: 'message-1', isRead });
+  expect(prisma.contactMessage.updateMany).toHaveBeenCalledWith({ where: { id: 'message-1' }, data: { isRead } });
+});
+test.each([null, {}, { isRead: 'true' }])('rejects invalid state %j', async body => {
+  expect((await PATCH(request(body), context)).status).toBe(400);
+  expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
+});
+test('returns 404 for a missing message', async () => {
+  (prisma.contactMessage.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
+  expect((await PATCH(request({ isRead: true }), context)).status).toBe(404);
+});
+test('returns a recoverable error for a database outage', async () => {
+  const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+  (prisma.$transaction as jest.Mock).mockRejectedValue(new Error('offline'));
+  expect((await GET(new Request('http://localhost/api/admin/messages'))).status).toBe(500);
+  log.mockRestore();
+});
