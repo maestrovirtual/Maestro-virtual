@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
 import { Stage, CourseType, BackgroundPattern } from "@prisma/client";
 import { stageMap, typeMap, patternMap, resolveEnum } from "@/lib/prisma/course-enums";
+import { requireStaffApi } from "@/lib/auth/dal";
 
 // ==========================================
 // GET: Obtener un solo curso por su SLUG
@@ -49,6 +50,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> } // <-- Cambio en el tipo
 ) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const resolvedParams = await params; // <-- Esperamos los parámetros
     const id = resolvedParams.id;
     const body = await request.json();
@@ -95,6 +99,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> } // <-- Cambio en el tipo
 ) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const resolvedParams = await params; // <-- Esperamos los parámetros
     const id = resolvedParams.id;
 

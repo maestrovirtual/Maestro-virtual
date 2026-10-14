@@ -58,12 +58,12 @@ export default function AdminSidebar() {
             </nav>
 
             {/* FOOTER DEL SIDEBAR (Cerrar Sesión) */}
-            <div className="border-t border-border p-4">
+            <form action="/api/auth/logout" method="post" className="border-t border-border p-4">
                 <button className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/40 dark:hover:text-red-300">
                     <LogOut size={18} />
                     Cerrar Sesión
                 </button>
-            </div>
+            </form>
         </aside>
     );
 }
