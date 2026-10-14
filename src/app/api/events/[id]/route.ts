@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
+import { requireStaffApi } from "@/lib/auth/dal";
 
 // ==========================================
 // GET: Obtener un solo evento por su ID
@@ -41,6 +42,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const resolvedParams = await params;
     const id = resolvedParams.id;
     const body = await request.json();
@@ -74,6 +78,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+
     const resolvedParams = await params;
     const id = resolvedParams.id;
 
