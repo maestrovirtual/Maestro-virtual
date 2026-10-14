@@ -8,9 +8,10 @@ import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
 
 export default function ContactSection() {
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '', website: '' });
   const [isSending, setIsSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
 
   // Mismos 5 links del Footer para consistencia. LinkedIn queda "#"
@@ -23,14 +24,27 @@ export default function ContactSection() {
     { name: 'TikTok',    icon: FaTiktok,     color: '#000000', url: 'https://www.tiktok.com/@maestrovirtual.a.c?_r=1&_t=ZS-99XYM39hgw6' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error ?? 'No se pudo enviar el mensaje');
+      }
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+      setFormData({ name: '', email: '', subject: '', message: '', website: '' });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -40,7 +54,7 @@ export default function ContactSection() {
 
   return (
     <section aria-labelledby="contact-section-title" className="relative overflow-hidden min-h-screen flex flex-col justify-center bg-bgLight dark:bg-bgDark transition-colors duration-300 py-16 sm:py-20 lg:py-24">
-      
+
       {/* Fondos */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-600/10 via-bgLight to-bgLight dark:from-blue-600/20 dark:via-bgDark dark:to-bgDark" />
       <div className="absolute -top-[350px] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-blue-600/20 blur-[180px] animate-pulse-slower" />
@@ -92,6 +106,11 @@ export default function ContactSection() {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 sm:p-8 flex flex-col gap-5">
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label htmlFor="website">No rellenar</label>
+                <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border/60 pb-3">
                 <span className="text-sm font-semibold text-muted-foreground w-20">Para:</span>
                 <span className="text-sm font-medium text-text-primary bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-md">contacto@maestrovirtual.org</span>
@@ -116,6 +135,12 @@ export default function ContactSection() {
                 <label htmlFor="message" className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Mensaje:</label>
                 <textarea id="message" name="message" required rows={6} value={formData.message} onChange={handleChange} placeholder="Escribe aquí..." className="w-full resize-none rounded-2xl border border-border bg-surface/50 p-4 text-sm text-text-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 backdrop-blur-sm" />
               </div>
+
+              {errorMessage && (
+                <div role="alert" className="rounded-lg border border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-500/10 px-4 py-2 text-sm text-red-700 dark:text-red-300">
+                  {errorMessage}
+                </div>
+              )}
 
               <div className="mt-4 flex items-center justify-end">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
