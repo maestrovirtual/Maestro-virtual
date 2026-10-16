@@ -49,30 +49,26 @@ test.describe('Tarea 28: Pruebas de integración Frontend-Backend', () => {
     await page.goto('/es/contact');
     await page.waitForLoadState('domcontentloaded');
 
-    // Si el formulario no usa la etiqueta <form>, buscamos por inputs o por contenedor
-    const nameInput = page.locator('input[name="name"], input[type="text"]').first();
-    await expect(nameInput).toBeVisible({ timeout: 10000 });
+    // Seleccionar por etiqueta evita confundir el nombre con el honeypot oculto.
+    await page.getByLabel('Nombre:', { exact: true }).fill('Usuario Prueba Integración');
+    await page.getByLabel('De:', { exact: true }).fill('prueba.integracion@example.com');
+    await page.getByLabel('Asunto:', { exact: true }).fill('Prueba automatizada de contacto');
+    await page.getByLabel('Mensaje:', { exact: true }).fill('Mensaje de prueba de integración automatizada.');
+    await expect(page.locator('input[name="website"]')).toHaveValue('');
 
-    // Llenar campos del formulario
-    await nameInput.fill('Usuario Prueba Integración');
-
-    const emailInput = page.locator('input[type="email"], input[name="email"]').first();
-    if (await emailInput.isVisible()) {
-      await emailInput.fill('prueba.integracion@example.com');
-    }
-
-    const messageInput = page.locator('textarea').first();
-    if (await messageInput.isVisible()) {
-      await messageInput.fill('Mensaje de prueba de integración automatizada.');
-    }
-
-    // Ubicar botón de envío
-    const submitBtn = page.locator('button[type="submit"], button:has-text("Enviar"), button:has-text("Send")').first();
-    await expect(submitBtn).toBeVisible();
-    await submitBtn.click();
-
-    // Confirmar que la página procesó la solicitud sin fallos críticos de servidor
-    await expect(page.locator('body')).not.toContainText('Internal Server Error');
+    const responsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === '/api/contact' &&
+      response.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: 'Enviar', exact: true }).click();
+    const response = await responsePromise;
+    expect(response.ok()).toBeTruthy();
+    const result = await response.json();
+    expect(result.success).toBe(true);
+    expect(result.id).toEqual(expect.any(String));
+    expect(result.id).not.toBe('');
+    expect(result.id).not.toBe('skipped');
+    await expect(page.getByRole('heading', { name: '¡Correo enviado con éxito!' })).toBeVisible();
   });
 
 });
