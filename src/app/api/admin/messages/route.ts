@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     const [messages, total, unreadInbox, unreadArchived, unreadSpam] = await prisma.$transaction([
       prisma.contactMessage.findMany({
         where,
+        include: { _count: { select: { replies: { where: { status: "SENT" } } } } },
         orderBy: [{ date: "desc" }, { id: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,

@@ -106,7 +106,7 @@ function buildHtml(payload: ContactEmailPayload): string {
 
 export async function sendContactEmail(payload: ContactEmailPayload) {
   return await getResend().emails.send({
-    from: "onboarding@resend.dev",
+    from: process.env.MAIL_FROM?.trim() || "onboarding@resend.dev",
     to: process.env.CONTACT_EMAIL!,
     replyTo: payload.email,
     subject: `[Maestro Virtual] ${payload.subject}`,

@@ -15,3 +15,10 @@ test('MV-34: protege lectura y cambio de estado del API sin sesión', async ({ r
   const update = await request.patch('/api/admin/messages/missing', { data: { isRead: true } });
   expect(update.status()).toBe(401);
 });
+
+test('MV-34: protege historial y envío de respuestas sin sesión', async ({ request }) => {
+  const history = await request.get('/api/admin/messages/missing/replies');
+  expect(history.status()).toBe(401);
+  const send = await request.post('/api/admin/messages/missing/replies', { data: { subject: 'Prueba', body: 'Mensaje' } });
+  expect(send.status()).toBe(401);
+});

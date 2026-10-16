@@ -29,7 +29,7 @@ test('lists newest first with deterministic order and pagination', async () => {
   (prisma.$transaction as jest.Mock).mockResolvedValue([[{ id: 'message-1', isRead: false }], 21, 7, 2, 3]);
   const response = await GET(new Request('http://localhost/api/admin/messages?page=2'));
   expect(await response.json()).toEqual({ messages: [{ id: 'message-1', isRead: false }], total: 21, page: 2, pageSize: 20, unreadCounts: { inbox: 7, archived: 2, spam: 3 } });
-  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ where: { isArchived: false, isSpam: false }, orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
+  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ where: { isArchived: false, isSpam: false }, include: { _count: { select: { replies: { where: { status: "SENT" } } } } }, orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
   expect(response.headers.get('cache-control')).toBe('private, no-store');
 });
 test.each(['0', '-1', '1.5', 'abc', '100001'])('rejects invalid page %s', async page => {

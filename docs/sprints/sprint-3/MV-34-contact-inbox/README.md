@@ -143,3 +143,87 @@ No se requiere otra migración ni claves adicionales para estas dos mejoras.
 Se verificó un mensaje sintético que entró directamente a Spam con Resend sin
 configurar, además de pruebas de reglas, contadores por carpeta y actualización
 al recuperar el foco de la ventana.
+
+## Responder desde el panel
+
+Al abrir un mensaje, “Responder desde el panel” despliega un editor de texto
+plano con asunto, destinatario, remitente institucional, vista previa y contador
+de caracteres. “Abrir en mi app de correo” conserva la alternativa externa y
+prepara destinatario/asunto; esa app decide la cuenta de salida y sus envíos no
+se registran en el panel. Los enlaces codifican los valores del destinatario y
+asunto para evitar inyección de parámetros en `mailto:`.
+
+### Configuración del correo institucional
+
+```dotenv
+RESEND_API_KEY=clave_del_entorno
+MAIL_FROM="Maestro Virtual <contacto@tu-dominio-verificado.org>"
+MAIL_REPLY_TO=buzon-institucional@tu-dominio.org
+CONTACT_EMAIL=buzon-institucional@tu-dominio.org
+```
+
+Los valores son ilustrativos: el dominio de MAIL_FROM debe estar verificado en
+Resend y el buzón de respuesta debe poder recibir correo. MAIL_REPLY_TO es
+opcional: por defecto se usa CONTACT_EMAIL y después la dirección de MAIL_FROM.
+CONTACT_EMAIL continúa siendo el destinatario de las notificaciones del
+formulario. Las notificaciones usan MAIL_FROM cuando existe; las respuestas del
+panel requieren MAIL_FROM institucional y no aceptan el remitente de prueba
+`@resend.dev`. El estado de configuración no verifica el dominio mediante API;
+Resend realiza esa validación al enviar. Configurar las variables también en
+Preview/Production del despliegue correspondiente y reiniciar/republicar.
+
+Si falta la clave o el remitente, la pantalla explica qué configurar y permite
+redactar/vista previa, pero no enviar. Nunca expone la clave al navegador. El
+editor conserva el texto en memoria ante un error; no guarda borradores al
+recargar o cerrar el mensaje. Las contestaciones futuras del destinatario llegan
+al buzón indicado en Reply-To: todavía no se importan al historial del panel.
+
+### Historial y estados
+
+- `GET /api/admin/messages/{id}/replies?page=1` carga 20 respuestas por página,
+  más recientes primero, y la configuración pública del remitente. Protegido
+  por STAFF, sin caché compartida.
+- `POST /api/admin/messages/{id}/replies` recibe `requestId` UUID, `subject`
+  (1–200 caracteres, sin saltos de línea) y `body` (1–10000 caracteres).
+  El remitente y destinatario se obtienen del servidor; los valores enviados
+  por el navegador no pueden reemplazarlos. Se valida origen y tipo JSON.
+- Guarda autor (ID y nombre), texto, asunto, destinatario, remitente, Reply-To,
+  fechas, resultado e identificador de Resend en ContactReply. No modifica el
+  mensaje original ni su estado leído/no leído.
+- SENT se muestra como “Enviado” y habilita el indicador “Respondido” de la
+  bandeja. Significa aceptación por Resend, no entrega ni lectura del correo.
+- FAILED se muestra como “No enviado” ante un rechazo confirmado. PENDING se
+  muestra como “Por confirmar” si hay un envío en proceso o un resultado incierto.
+- Antes de responder a spam debe usarse “No es spam”.
+
+La migración `20261016020000_contact_replies` crea la tabla, estados, relación al
+mensaje y un índice único parcial que permite solo un intento PENDING por
+mensaje. Se aplicó a la base configurada en este entorno, sin borrar contactos.
+Los otros entornos requieren `npx prisma migrate deploy` y regenerar Prisma.
+
+### Reintentos y límites
+
+Se persiste el intento antes de llamar a Resend y se reutiliza la misma clave
+`contact-reply/{id}` y el mismo contenido en los reintentos. Resend conserva
+claves durante 24 horas; el panel limita reintentos a 23 horas desde la creación.
+Una solicitud ya SENT devuelve su resultado sin reenviar. El índice parcial
+impide iniciar otra respuesta mientras exista una pendiente de confirmación.
+Solo el autor original puede reintentar un registro desde el historial.
+
+Un envío incierto o demasiado antiguo requiere revisión en Resend antes de
+intentar una respuesta nueva; no hay una acción automática para desbloquearlo
+asumiendo que falló. No se implementan adjuntos, CC/BCC, borradores persistentes,
+webhooks de entrega ni recepción del hilo de correo.
+
+Referencia del proveedor: https://resend.com/docs/dashboard/emails/idempotency-keys
+
+### Validación de esta ampliación
+
+199 pruebas Jest, lint, TypeScript, build y 8 pruebas Playwright de acceso.
+Los escenarios de envío y rechazo de Resend se verificaron con el servicio
+simulado: permisos, destinatario/remitente del servidor, entradas inválidas,
+configuración faltante, historial paginado, vista previa, texto conservado tras
+fallos, ID reutilizado, respuestas duplicadas, ventana de reintento y caídas de
+red/base de datos. Se verificó en el navegador el editor real y su bloqueo por
+configuración faltante. No se enviaron respuestas reales: faltan RESEND_API_KEY
+y MAIL_FROM en la configuración local.

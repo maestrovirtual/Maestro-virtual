@@ -152,5 +152,35 @@ model ContactMessage {
   isSpam     Boolean @default(false)
   date      DateTime @default(now())
 
+  replies ContactReply[]
+
   @@index([isSpam, isArchived, date, id])
+}
+
+
+enum ContactReplyStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model ContactReply {
+  id          String @id @default(uuid())
+  messageId   String
+  message     ContactMessage @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  staffId     String
+  staffName   String
+  fromEmail   String
+  toEmail     String
+  replyTo     String
+  subject     String
+  body        String
+  status      ContactReplyStatus @default(PENDING)
+  providerId  String?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sentAt      DateTime?
+
+  @@index([messageId, createdAt, id])
 }
