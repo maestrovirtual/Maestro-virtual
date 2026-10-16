@@ -34,5 +34,5 @@ test('supports empty inbox and retry after load failure', async () => {
   await screen.findByRole('alert');
   fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20 }) });
   fireEvent.click(screen.getByText('Reintentar'));
-  await waitFor(() => expect(screen.getByText('No hay mensajes en esta página.')).toBeVisible());
+  await waitFor(() => expect(screen.getByText('Todo listo para tu primer mensaje')).toBeVisible());
 });

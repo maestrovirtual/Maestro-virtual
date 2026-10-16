@@ -7,9 +7,9 @@ export default async function AdminMessagesPage({ params }: { params: Promise<{ 
   const { locale } = await params;
   if (!await getStaffUser()) redirect(`/${locale}/staff/login`);
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-[#f6f8fc]" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
       <AdminSidebar />
-      <main className="min-w-0 flex-1 p-4 md:p-8"><AdminMessagesView /></main>
+      <main className="min-w-0 flex-1 px-4 py-8 md:px-8 lg:px-12 lg:py-10"><AdminMessagesView /></main>
     </div>
   );
 }
