@@ -57,6 +57,13 @@ Resend se inicializa al enviar correo, no al importar módulos: la ausencia de
 `RESEND_API_KEY` no impide compilar ni guardar mensajes; se registra como fallo
 de notificación. El envío real requiere `RESEND_API_KEY` y `CONTACT_EMAIL`.
 
-Validación local: 119 pruebas Jest, ESLint, compilación de producción y 7 pruebas
-Playwright de acceso a staff y a la bandeja. Las consultas se probaron con Prisma
-simulado; no se aplicó la migración ni se enviaron correos a servicios reales.
+Validación automatizada: 121 pruebas Jest, ESLint, TypeScript y 7 pruebas
+Playwright de acceso a staff y a la bandeja (más la compilación de producción
+validada en la implementación inicial). El usuario aplicó la migración en su
+base; se verificó un mensaje de diagnóstico real sin Resend y su lectura desde
+el panel. No se enviaron correos a servicios reales.
+
+El honeypot se oculta con el atributo HTML `hidden` para evitar que el navegador
+lo autocomplete como un campo de sitio web. El formulario no muestra una
+confirmación si la respuesta antispam tiene `id: "skipped"`: requiere el ID de un
+mensaje guardado. Las pruebas cubren este caso y la recepción sin notificación.
