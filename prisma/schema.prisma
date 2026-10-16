@@ -145,7 +145,67 @@ model ContactMessage {
   id        String   @id @default(uuid())
   name      String
   email     String
+  subject   String   @default("")
   message   String
   isRead    Boolean  @default(false)
+  isArchived Boolean @default(false)
+  isSpam     Boolean @default(false)
   date      DateTime @default(now())
+  lastActivityAt DateTime @default(now())
+
+  replies ContactReply[]
+
+  @@index([isSpam, isArchived, lastActivityAt, id])
+}
+
+
+enum ContactReplyStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model ContactReply {
+  id          String @id @default(uuid())
+  messageId   String
+  message     ContactMessage @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  staffId     String?
+  staffName   String
+  fromEmail   String
+  toEmail     String
+  replyTo     String
+  subject     String
+  body        String
+  status      ContactReplyStatus @default(PENDING)
+  providerId  String?
+  provider    String @default("resend")
+  direction   String @default("OUTBOUND")
+  providerThreadId String?
+  rfcMessageId String?
+  gmailDraftId String?
+  gmailSendLeaseUntil DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sentAt      DateTime?
+
+  @@index([messageId, createdAt, id])
+  @@index([provider, providerThreadId])
+  @@unique([provider, providerId])
+}
+
+
+model ContactMailbox {
+  id String @id @default("institution")
+  email String
+  encryptedRefreshToken String
+  connectedBy String
+  historyId String?
+  nextPageToken String?
+  recoveryCursor String?
+  recoveryHistoryId String?
+  leaseUntil DateTime?
+  lastSyncedAt DateTime?
+  lastError String?
+  updatedAt DateTime @updatedAt
 }
