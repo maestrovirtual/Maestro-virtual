@@ -149,7 +149,8 @@ model ContactMessage {
   message   String
   isRead    Boolean  @default(false)
   isArchived Boolean @default(false)
+  isSpam     Boolean @default(false)
   date      DateTime @default(now())
 
-  @@index([isArchived, date, id])
+  @@index([isSpam, isArchived, date, id])
 }

@@ -57,7 +57,7 @@ Resend se inicializa al enviar correo, no al importar módulos: la ausencia de
 `RESEND_API_KEY` no impide compilar ni guardar mensajes; se registra como fallo
 de notificación. El envío real requiere `RESEND_API_KEY` y `CONTACT_EMAIL`.
 
-Validación automatizada: 134 pruebas Jest, ESLint, TypeScript y 7 pruebas
+Validación automatizada: 143 pruebas Jest, ESLint, TypeScript y 7 pruebas
 Playwright de acceso a staff y a la bandeja (más la compilación de producción
 validada en la implementación inicial). El usuario aplicó la migración en su
 base; se verificó un mensaje de diagnóstico real sin Resend y su lectura desde
@@ -91,3 +91,24 @@ aplicarse con `npx prisma migrate deploy` antes de desplegar este código.
 Las pruebas incluyen archivado/restauración, separación de carpetas y sus
 conteos, estados inválidos, permisos, fallos de guardado y el último mensaje de
 una página.
+
+
+## Spam manual y reversible
+
+La carpeta Spam muestra mensajes marcados manualmente por el staff. “Marcar como
+spam” los retira de Bandeja de entrada o Archivados; “No es spam” los devuelve a
+la bandeja. Se conserva el estado de lectura, la fecha y todo el contenido.
+No hay eliminación automática ni clasificación automática de mensajes. El
+honeypot del formulario conserva su comportamiento independiente de rechazo.
+
+`GET /api/admin/messages?view=spam` devuelve solo esa carpeta, con paginación y
+conteo en el servidor. Las otras dos vistas excluyen spam. El PATCH admite
+`isSpam: boolean`; al marcar spam se desactiva archivado y al archivar se
+desactiva spam. Una petición que intente activar ambos estados es rechazada.
+
+La migración `20261016010000_contact_message_spam` agrega `isSpam=false`, actualiza
+el índice de carpetas y evita con una restricción que un mensaje esté archivado
+y en spam simultáneamente. Se aplicó a la base configurada del entorno local;
+los demás entornos requieren `npx prisma migrate deploy` antes de usar el código.
+Las pruebas cubren aislamiento de carpetas, marcado y restauración, permisos,
+estados incompatibles y fallos del servidor.

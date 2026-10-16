@@ -2,17 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "next-intl";
-import { Archive, ArchiveRestore, ArrowDownWideNarrow, ArrowUpRight, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Inbox as InboxIcon, Mail, MailOpen, RefreshCw } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownWideNarrow, ArrowUpRight, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 
 type ContactMessage = {
   id: string; name: string; email: string; subject: string;
-  message: string; date: string; isRead: boolean; isArchived: boolean;
+  message: string; date: string; isRead: boolean; isArchived: boolean; isSpam: boolean;
 };
+type Folder = "inbox" | "archived" | "spam";
 type Inbox = { messages: ContactMessage[]; total: number; page: number; pageSize: number };
 
 export default function AdminMessagesView() {
   const locale = useLocale();
-  const [view, setView] = useState<"inbox" | "archived">("inbox");
+  const [view, setView] = useState<Folder>("inbox");
   const [notice, setNotice] = useState("");
   const [page, setPage] = useState(1);
   const [inbox, setInbox] = useState<Inbox | null>(null);
@@ -57,7 +58,7 @@ export default function AdminMessagesView() {
     setPage(nextPage);
   }
 
-  function changeView(nextView: "inbox" | "archived") {
+  function changeView(nextView: Folder) {
     if (view === nextView) return;
     setLoading(true);
     setError("");
@@ -68,21 +69,21 @@ export default function AdminMessagesView() {
     setView(nextView);
   }
 
-  async function toggleArchive(message: ContactMessage) {
+  async function moveMessage(message: ContactMessage, changes: { isArchived?: boolean; isSpam?: boolean }, confirmation: string) {
     setPendingId(message.id);
     setError("");
     setNotice("");
     try {
       const response = await fetch(`/api/admin/messages/${encodeURIComponent(message.id)}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isArchived: !message.isArchived }),
+        body: JSON.stringify(changes),
       });
       if (!response.ok) throw new Error("No se pudo mover el mensaje. Intenta de nuevo.");
       setSelectedId(null);
       setLoading(true);
       if (inbox?.messages.length === 1 && page > 1) setPage(page - 1);
       else await load();
-      setNotice(message.isArchived ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje archivado. Puedes recuperarlo en Archivados.");
+      setNotice(confirmation);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo mover el mensaje.");
     } finally { setPendingId(null); }
@@ -120,16 +121,16 @@ export default function AdminMessagesView() {
         </div>
         <button className={buttonClass} disabled={loading || pendingId !== null} onClick={reload}><RefreshCw size={16} className={loading ? "animate-spin" : ""} aria-hidden="true" />Actualizar</button>
       </div>
-      <nav aria-label="Carpetas de mensajes" className="mb-5 flex w-fit gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        {(["inbox", "archived"] as const).map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}>{folder === "inbox" ? <InboxIcon size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}{folder === "inbox" ? "Bandeja de entrada" : "Archivados"}</button>)}
+      <nav aria-label="Carpetas de mensajes" className="mb-5 flex w-fit max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+        {(["inbox", "archived", "spam"] as const).map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}>{folder === "inbox" ? <InboxIcon size={16} aria-hidden="true" /> : folder === "spam" ? <ShieldAlert size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}{folder === "inbox" ? "Bandeja de entrada" : folder === "spam" ? "Spam" : "Archivados"}</button>)}
       </nav>
       {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {error && <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error} <button className="font-semibold underline" disabled={loading || pendingId !== null} onClick={reload}>Reintentar</button></div>}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.12)]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{view === "inbox" ? <InboxIcon size={18} aria-hidden="true" /> : <Archive size={18} aria-hidden="true" />}</div>
-            <h2 className="text-sm font-semibold text-slate-900">{view === "inbox" ? "Bandeja de entrada" : "Mensajes archivados"}</h2>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{view === "inbox" ? <InboxIcon size={18} aria-hidden="true" /> : view === "spam" ? <ShieldAlert size={18} aria-hidden="true" /> : <Archive size={18} aria-hidden="true" />}</div>
+            <h2 className="text-sm font-semibold text-slate-900">{view === "inbox" ? "Bandeja de entrada" : view === "spam" ? "Spam" : "Mensajes archivados"}</h2>
             {inbox && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500">{inbox.total}</span>}
           </div>
           <span className="flex items-center gap-2 text-xs text-slate-400"><ArrowDownWideNarrow size={14} aria-hidden="true" />Más recientes primero</span>
@@ -142,9 +143,9 @@ export default function AdminMessagesView() {
                   <div className="flex h-16 w-16 -rotate-6 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-500 shadow-sm"><Mail size={30} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div className="absolute right-0 bottom-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-emerald-100 text-emerald-600"><CheckCheck size={15} aria-hidden="true" /></div>
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{inbox.total === 0 ? (view === "archived" ? "No tienes mensajes archivados" : "Todo listo para tu primer mensaje") : "No hay mensajes en esta página"}</h3>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
-                <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-xs text-slate-400"><MailOpen size={14} aria-hidden="true" />{inbox.total} mensajes {view === "archived" ? "archivados" : "en la bandeja"}</p>
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{inbox.total === 0 ? (view === "spam" ? "Tu carpeta de spam está vacía" : view === "archived" ? "No tienes mensajes archivados" : "Todo listo para tu primer mensaje") : "No hay mensajes en esta página"}</h3>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (view === "spam" ? "Los mensajes que marques como spam se conservarán aquí. Si te equivocas, usa No es spam para devolverlos a la bandeja." : view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
+                <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-xs text-slate-400"><MailOpen size={14} aria-hidden="true" />{inbox.total} mensajes {view === "archived" ? "archivados" : view === "spam" ? "en spam" : "en la bandeja"}</p>
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
@@ -164,7 +165,8 @@ export default function AdminMessagesView() {
                         <span className="sr-only">{isSelected ? "Cerrar mensaje" : "Ver mensaje"}</span>
                       </button>
                       {isSelected && <div id={`message-${message.id}`} className="mx-4 mb-5 rounded-xl border border-slate-200 bg-white p-5 sm:ml-20 sm:mr-6 sm:p-6"><p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-600">{message.message}</p><a href={`mailto:${message.email}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800">Responder por correo<ArrowUpRight size={15} aria-hidden="true" /></a></div>}
-                      <div className="flex flex-wrap justify-end gap-2 px-5 pb-4 sm:px-7"><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleArchive(message)}>{view === "archived" ? <ArchiveRestore size={14} aria-hidden="true" /> : <Archive size={14} aria-hidden="true" />}{view === "archived" ? "Devolver a la bandeja" : "Archivar"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button></div>
+                      <div className="flex flex-wrap justify-end gap-2 px-5 pb-4 sm:px-7">{view !== "spam" && <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isArchived: !message.isArchived }, message.isArchived ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje archivado. Puedes recuperarlo en Archivados.")}>{view === "archived" ? <ArchiveRestore size={14} aria-hidden="true" /> : <Archive size={14} aria-hidden="true" />}{view === "archived" ? "Devolver a la bandeja" : "Archivar"}</button>}
+                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button></div>
                     </li>
                   );
                 })}

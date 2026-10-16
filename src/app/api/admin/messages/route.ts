@@ -8,10 +8,10 @@ export async function GET(request: Request) {
     if (denied) return denied;
     const search = new URL(request.url).searchParams;
     const view = search.get("view") ?? "inbox";
-    if (view !== "inbox" && view !== "archived") {
+    if (view !== "inbox" && view !== "archived" && view !== "spam") {
       return NextResponse.json({ error: "Vista inválida" }, { status: 400 });
     }
-    const where = { isArchived: view === "archived" };
+    const where = { isArchived: view === "archived", isSpam: view === "spam" };
     const rawPage = search.get("page") ?? "1";
     const page = Number(rawPage);
     if (!Number.isSafeInteger(page) || page < 1 || page > 100000) {

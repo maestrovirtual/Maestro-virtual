@@ -13,16 +13,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Solicitud inválida" }, { status: 400 });
     }
-    const data: { isRead?: boolean; isArchived?: boolean } = {};
+    const data: { isRead?: boolean; isArchived?: boolean; isSpam?: boolean } = {};
     for (const [key, value] of Object.entries(body)) {
-      if ((key !== "isRead" && key !== "isArchived") || typeof value !== "boolean") {
-        return NextResponse.json({ error: "Solo se permiten isRead e isArchived como booleanos" }, { status: 400 });
+      if ((key !== "isRead" && key !== "isArchived" && key !== "isSpam") || typeof value !== "boolean") {
+        return NextResponse.json({ error: "Solo se permiten isRead, isArchived e isSpam como booleanos" }, { status: 400 });
       }
       data[key] = value;
     }
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "Indica el estado que deseas actualizar" }, { status: 400 });
     }
+    if (data.isArchived === true && data.isSpam === true) {
+      return NextResponse.json({ error: "El mensaje solo puede estar en una carpeta" }, { status: 400 });
+    }
+    if (data.isSpam === true) data.isArchived = false;
+    if (data.isArchived === true) data.isSpam = false;
     const { id } = await context.params;
     const result = await prisma.contactMessage.updateMany({ where: { id }, data });
     if (!result.count) return NextResponse.json({ error: "Mensaje no encontrado" }, { status: 404 });

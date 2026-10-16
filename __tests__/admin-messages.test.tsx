@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AdminMessagesView from '@/features/admin/components/AdminMessagesView';
 jest.mock('next-intl', () => ({ useLocale: () => 'es' }));
-const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', message: 'Información sobre cursos', isRead: false, isArchived: false, date: '2026-10-14T12:00:00Z' };
+const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', message: 'Información sobre cursos', isRead: false, isArchived: false, isSpam: false, date: '2026-10-14T12:00:00Z' };
 const fetchMock = jest.fn();
 beforeEach(() => {
   fetchMock.mockReset();
@@ -79,4 +79,32 @@ test('returns to previous page after archiving its last message', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Archivar' }));
   await screen.findByText('Página 1 de 1 · 20 mensajes');
   expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=inbox', expect.anything());
+});
+
+test('moves a message to spam and restores it to the inbox', async () => {
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ isSpam: true, isArchived: false }) });
+  fetchMock.mockResolvedValueOnce(inboxResponse([]));
+  fireEvent.click(screen.getByRole('button', { name: 'Marcar como spam' }));
+  await screen.findByText('Todo listo para tu primer mensaje');
+  expect(fetchMock).toHaveBeenCalledWith('/api/admin/messages/one', expect.objectContaining({ body: JSON.stringify({ isSpam: true }) }));
+  fetchMock.mockResolvedValueOnce(inboxResponse([{ ...message, isSpam: true }]));
+  fireEvent.click(screen.getByRole('button', { name: 'Spam' }));
+  await screen.findByText('Consulta');
+  expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=spam', expect.anything());
+  expect(screen.queryByRole('button', { name: 'Archivar' })).not.toBeInTheDocument();
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ isSpam: false }) });
+  fetchMock.mockResolvedValueOnce(inboxResponse([]));
+  fireEvent.click(screen.getByRole('button', { name: 'No es spam' }));
+  await screen.findByText('Tu carpeta de spam está vacía');
+  expect(fetchMock).toHaveBeenCalledWith('/api/admin/messages/one', expect.objectContaining({ body: JSON.stringify({ isSpam: false }) }));
+});
+test('keeps the message visible if marking as spam fails', async () => {
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  fetchMock.mockResolvedValueOnce({ ok: false });
+  fireEvent.click(screen.getByRole('button', { name: 'Marcar como spam' }));
+  await screen.findByRole('alert');
+  expect(screen.getByText('Consulta')).toBeVisible();
 });
