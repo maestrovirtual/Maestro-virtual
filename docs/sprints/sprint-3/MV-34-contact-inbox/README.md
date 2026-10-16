@@ -57,7 +57,7 @@ Resend se inicializa al enviar correo, no al importar módulos: la ausencia de
 `RESEND_API_KEY` no impide compilar ni guardar mensajes; se registra como fallo
 de notificación. El envío real requiere `RESEND_API_KEY` y `CONTACT_EMAIL`.
 
-Validación automatizada: 121 pruebas Jest, ESLint, TypeScript y 7 pruebas
+Validación automatizada: 134 pruebas Jest, ESLint, TypeScript y 7 pruebas
 Playwright de acceso a staff y a la bandeja (más la compilación de producción
 validada en la implementación inicial). El usuario aplicó la migración en su
 base; se verificó un mensaje de diagnóstico real sin Resend y su lectura desde
@@ -67,3 +67,27 @@ El honeypot se oculta con el atributo HTML `hidden` para evitar que el navegador
 lo autocomplete como un campo de sitio web. El formulario no muestra una
 confirmación si la respuesta antispam tiene `id: "skipped"`: requiere el ID de un
 mensaje guardado. Las pruebas cubren este caso y la recepción sin notificación.
+
+
+## Archivado reversible
+
+La pestaña Bandeja de entrada muestra únicamente mensajes con `isArchived=false`;
+Archivados muestra los de `isArchived=true`. Ambas vistas ordenan por fecha y
+cargan 20 registros por página con conteo filtrado en el servidor. Archivar o
+“Devolver a la bandeja” cambia únicamente ese indicador: conserva contenido,
+fecha y estado leído/no leído. No se implementa eliminación ni papelera.
+
+`GET /api/admin/messages` admite `view=inbox` (predeterminado) o `view=archived`.
+`PATCH /api/admin/messages/{id}` acepta `isRead` y/o `isArchived` booleanos;
+rechaza campos desconocidos. Mantiene la verificación STAFF para ambas acciones.
+Si se mueve el último mensaje de una página posterior, la vista vuelve a la
+página anterior para evitar dejar una página vacía.
+
+La migración `20261016000000_contact_message_archive` añade `isArchived` con valor
+predeterminado falso y un índice por archivado, fecha e ID. Se aplicó a la base
+configurada en el entorno local sin eliminar registros. En otros entornos debe
+aplicarse con `npx prisma migrate deploy` antes de desplegar este código.
+
+Las pruebas incluyen archivado/restauración, separación de carpetas y sus
+conteos, estados inválidos, permisos, fallos de guardado y el último mensaje de
+una página.

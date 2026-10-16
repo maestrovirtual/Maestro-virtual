@@ -10,13 +10,23 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     try { body = await request.json(); } catch {
       return NextResponse.json({ error: "Solicitud inválida" }, { status: 400 });
     }
-    if (!body || typeof body !== "object" || !("isRead" in body) || typeof body.isRead !== "boolean") {
-      return NextResponse.json({ error: "isRead debe ser un booleano" }, { status: 400 });
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Solicitud inválida" }, { status: 400 });
+    }
+    const data: { isRead?: boolean; isArchived?: boolean } = {};
+    for (const [key, value] of Object.entries(body)) {
+      if ((key !== "isRead" && key !== "isArchived") || typeof value !== "boolean") {
+        return NextResponse.json({ error: "Solo se permiten isRead e isArchived como booleanos" }, { status: 400 });
+      }
+      data[key] = value;
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Indica el estado que deseas actualizar" }, { status: 400 });
     }
     const { id } = await context.params;
-    const result = await prisma.contactMessage.updateMany({ where: { id }, data: { isRead: body.isRead } });
+    const result = await prisma.contactMessage.updateMany({ where: { id }, data });
     if (!result.count) return NextResponse.json({ error: "Mensaje no encontrado" }, { status: 404 });
-    return NextResponse.json({ id, isRead: body.isRead });
+    return NextResponse.json({ id, ...data });
   } catch (error) {
     console.error("Error al actualizar mensaje:", error);
     return NextResponse.json({ error: "No se pudo actualizar el mensaje" }, { status: 500 });

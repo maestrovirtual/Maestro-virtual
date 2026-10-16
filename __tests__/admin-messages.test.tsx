@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AdminMessagesView from '@/features/admin/components/AdminMessagesView';
 jest.mock('next-intl', () => ({ useLocale: () => 'es' }));
-const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', message: 'Información sobre cursos', isRead: false, date: '2026-10-14T12:00:00Z' };
+const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', message: 'Información sobre cursos', isRead: false, isArchived: false, date: '2026-10-14T12:00:00Z' };
 const fetchMock = jest.fn();
 beforeEach(() => {
   fetchMock.mockReset();
@@ -35,4 +35,48 @@ test('supports empty inbox and retry after load failure', async () => {
   fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20 }) });
   fireEvent.click(screen.getByText('Reintentar'));
   await waitFor(() => expect(screen.getByText('Todo listo para tu primer mensaje')).toBeVisible());
+});
+
+function inboxResponse(messages: typeof message[], total = messages.length) {
+  return { ok: true, json: async () => ({ messages, total, page: 1, pageSize: 20 }) };
+}
+test('archives only after confirmation and allows restoring from archived folder', async () => {
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'one', isArchived: true }) });
+  fetchMock.mockResolvedValueOnce(inboxResponse([]));
+  fireEvent.click(screen.getByRole('button', { name: 'Archivar' }));
+  await screen.findByText('Todo listo para tu primer mensaje');
+  expect(fetchMock).toHaveBeenCalledWith('/api/admin/messages/one', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ isArchived: true }) }));
+  fetchMock.mockResolvedValueOnce(inboxResponse([{ ...message, isArchived: true }]));
+  fireEvent.click(screen.getByRole('button', { name: 'Archivados' }));
+  await screen.findByText('Consulta');
+  expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=archived', expect.anything());
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'one', isArchived: false }) });
+  fetchMock.mockResolvedValueOnce(inboxResponse([]));
+  fireEvent.click(screen.getByRole('button', { name: 'Devolver a la bandeja' }));
+  await screen.findByText('No tienes mensajes archivados');
+  expect(screen.getByRole('status')).toHaveTextContent('Mensaje devuelto');
+  expect(fetchMock).toHaveBeenCalledWith('/api/admin/messages/one', expect.objectContaining({ body: JSON.stringify({ isArchived: false }) }));
+});
+test('keeps the message visible if archive fails', async () => {
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  fetchMock.mockResolvedValueOnce({ ok: false });
+  fireEvent.click(screen.getByRole('button', { name: 'Archivar' }));
+  await screen.findByRole('alert');
+  expect(screen.getByText('Consulta')).toBeVisible();
+});
+test('returns to previous page after archiving its last message', async () => {
+  fetchMock.mockResolvedValueOnce(inboxResponse([message], 21));
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  fetchMock.mockResolvedValueOnce(inboxResponse([message], 21));
+  fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+  await screen.findByText('Página 2 de 2 · 21 mensajes');
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ isArchived: true }) });
+  fetchMock.mockResolvedValueOnce(inboxResponse([message], 20));
+  fireEvent.click(screen.getByRole('button', { name: 'Archivar' }));
+  await screen.findByText('Página 1 de 1 · 20 mensajes');
+  expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=inbox', expect.anything());
 });

@@ -29,7 +29,7 @@ test('lists newest first with deterministic order and pagination', async () => {
   (prisma.$transaction as jest.Mock).mockResolvedValue([[{ id: 'message-1', isRead: false }], 21]);
   const response = await GET(new Request('http://localhost/api/admin/messages?page=2'));
   expect(await response.json()).toEqual({ messages: [{ id: 'message-1', isRead: false }], total: 21, page: 2, pageSize: 20 });
-  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
+  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ where: { isArchived: false }, orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
   expect(response.headers.get('cache-control')).toBe('private, no-store');
 });
 test.each(['0', '-1', '1.5', 'abc', '100001'])('rejects invalid page %s', async page => {
@@ -54,4 +54,30 @@ test('returns a recoverable error for a database outage', async () => {
   (prisma.$transaction as jest.Mock).mockRejectedValue(new Error('offline'));
   expect((await GET(new Request('http://localhost/api/admin/messages'))).status).toBe(500);
   log.mockRestore();
+});
+
+ test('filters archived messages and counts only that folder', async () => {
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
+  expect((await GET(new Request('http://localhost/api/admin/messages?view=archived'))).status).toBe(200);
+  expect(prisma.contactMessage.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { isArchived: true } }));
+  expect(prisma.contactMessage.count).toHaveBeenCalledWith({ where: { isArchived: true } });
+});
+test('rejects unknown folders', async () => {
+  expect((await GET(new Request('http://localhost/api/admin/messages?view=trash'))).status).toBe(400);
+  expect(prisma.contactMessage.findMany).not.toHaveBeenCalled();
+});
+test.each([true, false])('persists archive state %s without changing read state', async isArchived => {
+  (prisma.contactMessage.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+  const response = await PATCH(request({ isArchived }), context);
+  expect(await response.json()).toEqual({ id: 'message-1', isArchived });
+  expect(prisma.contactMessage.updateMany).toHaveBeenCalledWith({ where: { id: 'message-1' }, data: { isArchived } });
+});
+test.each([{ isArchived: 'true' }, { isArchived: null }, { isArchived: true, message: 'overwrite' }, []])('rejects invalid archive updates %j', async body => {
+  expect((await PATCH(request(body), context)).status).toBe(400);
+  expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
+});
+test.each([401, 403])('blocks unauthorized archival (%s)', async status => {
+  (requireStaffApi as jest.Mock).mockResolvedValue(NextResponse.json({ error: 'Denied' }, { status }));
+  expect((await PATCH(request({ isArchived: true }), context)).status).toBe(status);
+  expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
 });
