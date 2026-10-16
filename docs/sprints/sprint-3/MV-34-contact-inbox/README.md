@@ -57,7 +57,7 @@ Resend se inicializa al enviar correo, no al importar módulos: la ausencia de
 `RESEND_API_KEY` no impide compilar ni guardar mensajes; se registra como fallo
 de notificación. El envío real requiere `RESEND_API_KEY` y `CONTACT_EMAIL`.
 
-Validación automatizada: 143 pruebas Jest, ESLint, TypeScript y 7 pruebas
+Validación automatizada: 158 pruebas Jest, ESLint, TypeScript y 7 pruebas
 Playwright de acceso a staff y a la bandeja (más la compilación de producción
 validada en la implementación inicial). El usuario aplicó la migración en su
 base; se verificó un mensaje de diagnóstico real sin Resend y su lectura desde
@@ -93,12 +93,12 @@ conteos, estados inválidos, permisos, fallos de guardado y el último mensaje d
 una página.
 
 
-## Spam manual y reversible
+## Spam reversible
 
 La carpeta Spam muestra mensajes marcados manualmente por el staff. “Marcar como
 spam” los retira de Bandeja de entrada o Archivados; “No es spam” los devuelve a
 la bandeja. Se conserva el estado de lectura, la fecha y todo el contenido.
-No hay eliminación automática ni clasificación automática de mensajes. El
+No hay eliminación automática. La clasificación de mensajes nuevos se detalla abajo. El
 honeypot del formulario conserva su comportamiento independiente de rechazo.
 
 `GET /api/admin/messages?view=spam` devuelve solo esa carpeta, con paginación y
@@ -112,3 +112,34 @@ y en spam simultáneamente. Se aplicó a la base configurada del entorno local;
 los demás entornos requieren `npx prisma migrate deploy` antes de usar el código.
 Las pruebas cubren aislamiento de carpetas, marcado y restauración, permisos,
 estados incompatibles y fallos del servidor.
+
+
+## Clasificación automática y no leídos por carpeta
+
+Los mensajes nuevos pasan por `src/lib/contact/spam.ts` antes de guardarse. Un
+mensaje se clasifica como sospechoso si concentra al menos cuatro enlaces de
+tres dominios y estos ocupan 30% del texto; si tiene al menos seis enlaces que
+ocupan 50%; o si combina un enlace con una promesa de premio/ganancias de las
+reglas y una llamada a hacer clic/reclamar. Se consideran asunto y contenido.
+
+Es un filtro local por reglas, no un modelo entrenado ni un servicio de
+reputación. Puede tener falsos positivos o dejar pasar spam: el staff conserva
+“No es spam”. No aprende de correcciones, no bloquea al remitente ni reclasifica
+mensajes existentes. El contenido sospechoso se guarda sin notificación por
+correo y aparece en Spam sin leer; no se elimina ni se expone el resultado del
+filtro al visitante. La validación del formulario, honeypot y rate limit siguen
+activos antes del guardado.
+
+El GET de mensajes incluye `unreadCounts: { inbox, archived, spam }`, calculado
+en el servidor sobre todos los registros de cada carpeta, sin limitarlo a la
+página consultada. Las pestañas muestran un círculo rojo cuando hay no leídos;
+al llegar a cero desaparece. Leer/no leer modifica el contador local tras la
+confirmación del servidor; mover mensajes vuelve a consultar todas las cuentas.
+
+La interfaz consulta novedades cada 30 segundos mientras está visible y vuelve
+a consultar al recuperar el foco. No es una actualización instantánea por
+WebSocket. Durante una operación de lectura/movimiento se pausa ese refresco.
+No se requiere otra migración ni claves adicionales para estas dos mejoras.
+Se verificó un mensaje sintético que entró directamente a Spam con Resend sin
+configurar, además de pruebas de reglas, contadores por carpeta y actualización
+al recuperar el foco de la ventana.

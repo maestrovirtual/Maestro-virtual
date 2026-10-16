@@ -9,11 +9,12 @@ type ContactMessage = {
   message: string; date: string; isRead: boolean; isArchived: boolean; isSpam: boolean;
 };
 type Folder = "inbox" | "archived" | "spam";
-type Inbox = { messages: ContactMessage[]; total: number; page: number; pageSize: number };
+type Inbox = { messages: ContactMessage[]; total: number; page: number; pageSize: number; unreadCounts: Record<Folder, number> };
 
 export default function AdminMessagesView() {
   const locale = useLocale();
   const [view, setView] = useState<Folder>("inbox");
+  const [unreadCounts, setUnreadCounts] = useState<Record<Folder, number> | null>(null);
   const [notice, setNotice] = useState("");
   const [page, setPage] = useState(1);
   const [inbox, setInbox] = useState<Inbox | null>(null);
@@ -29,7 +30,10 @@ export default function AdminMessagesView() {
         ? "Tu sesión terminó o no tienes acceso. Vuelve a iniciar sesión."
         : "No se pudieron cargar los mensajes. Intenta de nuevo.");
       const data: Inbox = await response.json();
-      if (!signal?.aborted) setInbox(data);
+      if (!signal?.aborted) {
+        setInbox(data);
+        setUnreadCounts(data.unreadCounts);
+      }
     } catch (err) {
       if (!signal?.aborted) setError(err instanceof Error ? err.message : "Error al cargar mensajes.");
     } finally {
@@ -44,6 +48,22 @@ export default function AdminMessagesView() {
     });
     return () => controller.abort();
   }, [load]);
+
+  // Actualiza las llegadas sin interrumpir una operación del staff ni hacer
+  // parpadear la lista. Al ocultar la pestaña, se pausa el refresco periódico.
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = () => {
+      if (!document.hidden && !loading && pendingId === null) void load(controller.signal);
+    };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [load, loading, pendingId]);
 
   function reload() {
     setLoading(true);
@@ -99,6 +119,9 @@ export default function AdminMessagesView() {
       });
       if (!response.ok) throw new Error("No se pudo cambiar el estado. Intenta de nuevo.");
       const updated: { isRead: boolean } = await response.json();
+      setUnreadCounts(current => current && ({ ...current,
+        [view]: Math.max(0, current[view] + (updated.isRead === message.isRead ? 0 : updated.isRead ? -1 : 1)),
+      }));
       setInbox(current => current && ({ ...current, messages: current.messages.map(item =>
         item.id === message.id ? { ...item, isRead: updated.isRead } : item) }));
     } catch (err) {
@@ -122,8 +145,9 @@ export default function AdminMessagesView() {
         <button className={buttonClass} disabled={loading || pendingId !== null} onClick={reload}><RefreshCw size={16} className={loading ? "animate-spin" : ""} aria-hidden="true" />Actualizar</button>
       </div>
       <nav aria-label="Carpetas de mensajes" className="mb-5 flex w-fit max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        {(["inbox", "archived", "spam"] as const).map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}>{folder === "inbox" ? <InboxIcon size={16} aria-hidden="true" /> : folder === "spam" ? <ShieldAlert size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}{folder === "inbox" ? "Bandeja de entrada" : folder === "spam" ? "Spam" : "Archivados"}</button>)}
+        {(["inbox", "archived", "spam"] as const).map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}>{folder === "inbox" ? <InboxIcon size={16} aria-hidden="true" /> : folder === "spam" ? <ShieldAlert size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}{folder === "inbox" ? "Bandeja de entrada" : folder === "spam" ? "Spam" : "Archivados"}{!!unreadCounts?.[folder] && <span aria-label={`${unreadCounts[folder]} sin leer`} className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none tabular-nums text-white">{unreadCounts[folder]}</span>}</button>)}
       </nav>
+      {view === "spam" && <p className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">El filtro automático puede equivocarse. Revisa los mensajes y usa <strong>No es spam</strong> para recuperar los legítimos.</p>}
       {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {error && <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error} <button className="font-semibold underline" disabled={loading || pendingId !== null} onClick={reload}>Reintentar</button></div>}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.12)]">
@@ -144,7 +168,7 @@ export default function AdminMessagesView() {
                   <div className="absolute right-0 bottom-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-emerald-100 text-emerald-600"><CheckCheck size={15} aria-hidden="true" /></div>
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">{inbox.total === 0 ? (view === "spam" ? "Tu carpeta de spam está vacía" : view === "archived" ? "No tienes mensajes archivados" : "Todo listo para tu primer mensaje") : "No hay mensajes en esta página"}</h3>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (view === "spam" ? "Los mensajes que marques como spam se conservarán aquí. Si te equivocas, usa No es spam para devolverlos a la bandeja." : view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (view === "spam" ? "Aquí se conservan los mensajes detectados como sospechosos o marcados como spam por el staff. Usa No es spam para devolverlos a la bandeja." : view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
                 <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-xs text-slate-400"><MailOpen size={14} aria-hidden="true" />{inbox.total} mensajes {view === "archived" ? "archivados" : view === "spam" ? "en spam" : "en la bandeja"}</p>
               </div>
             ) : (

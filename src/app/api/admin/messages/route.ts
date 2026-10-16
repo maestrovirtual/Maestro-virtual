@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Página inválida" }, { status: 400 });
     }
     const pageSize = 20;
-    const [messages, total] = await prisma.$transaction([
+    const [messages, total, unreadInbox, unreadArchived, unreadSpam] = await prisma.$transaction([
       prisma.contactMessage.findMany({
         where,
         orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -26,8 +26,11 @@ export async function GET(request: Request) {
         take: pageSize,
       }),
       prisma.contactMessage.count({ where }),
+      prisma.contactMessage.count({ where: { isRead: false, isSpam: false, isArchived: false } }),
+      prisma.contactMessage.count({ where: { isRead: false, isSpam: false, isArchived: true } }),
+      prisma.contactMessage.count({ where: { isRead: false, isSpam: true, isArchived: false } }),
     ]);
-    return NextResponse.json({ messages, total, page, pageSize }, {
+    return NextResponse.json({ messages, total, page, pageSize, unreadCounts: { inbox: unreadInbox, archived: unreadArchived, spam: unreadSpam } }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {

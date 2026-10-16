@@ -21,7 +21,7 @@ beforeEach(() => {
 test('stores the normalized message before sending notification', async () => {
   const response = await POST(request());
   expect(await response.json()).toEqual({ success: true, id: 'saved', notificationSent: true });
-  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: { name: 'Ana', email: 'ana@example.com', subject: 'Curso', message: 'Quiero información' } });
+  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: { name: 'Ana', email: 'ana@example.com', subject: 'Curso', message: 'Quiero información', isSpam: false } });
   expect((prisma.contactMessage.create as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan((sendContactEmail as jest.Mock).mock.invocationCallOrder[0]);
 });
 test.each(['returned', 'thrown'])('retains a received message when notification fails (%s)', async mode => {
@@ -43,4 +43,12 @@ test('does not send email when storage fails', async () => {
 test('does not store honeypot submissions', async () => {
   await POST(request({ ...payload, website: 'spam' }));
   expect(prisma.contactMessage.create).not.toHaveBeenCalled();
+});
+
+test('stores suspicious content directly in spam without sending notification', async () => {
+  const response = await POST(request({ ...payload, subject: 'Ganaste un premio', message: 'Reclama ahora, haz clic https://example.com/premio' }));
+  expect(response.status).toBe(200);
+  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: expect.objectContaining({ isSpam: true }) });
+  expect(sendContactEmail).not.toHaveBeenCalled();
+  expect(await response.json()).toEqual({ success: true, id: 'saved', notificationSent: false });
 });

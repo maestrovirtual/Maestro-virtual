@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AdminMessagesView from '@/features/admin/components/AdminMessagesView';
 jest.mock('next-intl', () => ({ useLocale: () => 'es' }));
@@ -107,4 +107,30 @@ test('keeps the message visible if marking as spam fails', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Marcar como spam' }));
   await screen.findByRole('alert');
   expect(screen.getByText('Consulta')).toBeVisible();
+});
+
+test('shows global unread badges and decreases the current folder when reading', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [message], total: 30, page: 1, pageSize: 20, unreadCounts: { inbox: 23, archived: 2, spam: 3 } }) });
+  render(<AdminMessagesView />);
+  await screen.findByText('Consulta');
+  const folders = screen.getByRole('navigation', { name: 'Carpetas de mensajes' });
+  expect(within(folders).getByLabelText('23 sin leer')).toBeVisible();
+  expect(within(folders).getByLabelText('2 sin leer')).toBeVisible();
+  expect(within(folders).getByLabelText('3 sin leer')).toBeVisible();
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ isRead: true }) });
+  fireEvent.click(screen.getByRole('button', { name: 'Marcar como leído' }));
+  await screen.findByText('Leído');
+  expect(within(folders).getByLabelText('22 sin leer')).toBeVisible();
+});
+test('refreshes arrivals and unread badges when returning to the window', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20, unreadCounts: { inbox: 0, archived: 0, spam: 0 } }) });
+  render(<AdminMessagesView />);
+  await screen.findByText('Todo listo para tu primer mensaje');
+  const folders = screen.getByRole('navigation', { name: 'Carpetas de mensajes' });
+  expect(within(folders).queryByLabelText(/sin leer/)).not.toBeInTheDocument();
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [message], total: 1, page: 1, pageSize: 20, unreadCounts: { inbox: 1, archived: 0, spam: 2 } }) });
+  fireEvent(window, new Event('focus'));
+  await screen.findByText('Consulta');
+  expect(within(folders).getByLabelText('1 sin leer')).toBeVisible();
+  expect(within(folders).getByLabelText('2 sin leer')).toBeVisible();
 });

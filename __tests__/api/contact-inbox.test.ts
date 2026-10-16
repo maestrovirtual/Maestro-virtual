@@ -26,9 +26,9 @@ test.each([401, 403])('blocks unauthorized reads and writes (%s)', async status 
   expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
 });
 test('lists newest first with deterministic order and pagination', async () => {
-  (prisma.$transaction as jest.Mock).mockResolvedValue([[{ id: 'message-1', isRead: false }], 21]);
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[{ id: 'message-1', isRead: false }], 21, 7, 2, 3]);
   const response = await GET(new Request('http://localhost/api/admin/messages?page=2'));
-  expect(await response.json()).toEqual({ messages: [{ id: 'message-1', isRead: false }], total: 21, page: 2, pageSize: 20 });
+  expect(await response.json()).toEqual({ messages: [{ id: 'message-1', isRead: false }], total: 21, page: 2, pageSize: 20, unreadCounts: { inbox: 7, archived: 2, spam: 3 } });
   expect(prisma.contactMessage.findMany).toHaveBeenCalledWith({ where: { isArchived: false, isSpam: false }, orderBy: [{ date: 'desc' }, { id: 'desc' }], skip: 20, take: 20 });
   expect(response.headers.get('cache-control')).toBe('private, no-store');
 });
@@ -57,7 +57,7 @@ test('returns a recoverable error for a database outage', async () => {
 });
 
  test('filters archived messages and counts only that folder', async () => {
-  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0, 0]);
   expect((await GET(new Request('http://localhost/api/admin/messages?view=archived'))).status).toBe(200);
   expect(prisma.contactMessage.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { isArchived: true, isSpam: false } }));
   expect(prisma.contactMessage.count).toHaveBeenCalledWith({ where: { isArchived: true, isSpam: false } });
@@ -84,7 +84,7 @@ test.each([401, 403])('blocks unauthorized archival (%s)', async status => {
 });
 
 test('spam is separated from both inbox and archived folders', async () => {
-  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0, 0]);
   expect((await GET(new Request('http://localhost/api/admin/messages?view=spam'))).status).toBe(200);
   expect(prisma.contactMessage.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { isSpam: true, isArchived: false }, take: 20 }));
   expect(prisma.contactMessage.count).toHaveBeenCalledWith({ where: { isSpam: true, isArchived: false } });
@@ -104,4 +104,15 @@ test.each([401, 403])('blocks unauthorized spam updates (%s)', async status => {
   (requireStaffApi as jest.Mock).mockResolvedValue(NextResponse.json({ error: 'Denied' }, { status }));
   expect((await PATCH(request({ isSpam: true }), context)).status).toBe(status);
   expect(prisma.contactMessage.updateMany).not.toHaveBeenCalled();
+});
+
+test('counts unread messages across all pages of each folder', async () => {
+  (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 23, 4, 8]);
+  const response = await GET(new Request('http://localhost/api/admin/messages?view=spam&page=2'));
+  expect((await response.json()).unreadCounts).toEqual({ inbox: 23, archived: 4, spam: 8 });
+  for (const where of [
+    { isRead: false, isArchived: false, isSpam: false },
+    { isRead: false, isArchived: true, isSpam: false },
+    { isRead: false, isArchived: false, isSpam: true },
+  ]) expect(prisma.contactMessage.count).toHaveBeenCalledWith({ where });
 });
