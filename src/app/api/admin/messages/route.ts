@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     const [messages, total, unreadInbox, unreadArchived, unreadSpam] = await prisma.$transaction([
       prisma.contactMessage.findMany({
         where,
-        include: { _count: { select: { replies: { where: { status: "SENT" } } } } },
-        orderBy: [{ date: "desc" }, { id: "desc" }],
+        include: { _count: { select: { replies: { where: { status: "SENT", direction: "OUTBOUND" } } } } },
+        orderBy: [{ lastActivityAt: "desc" }, { id: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       prisma.contactMessage.count({ where: { isRead: false, isSpam: false, isArchived: true } }),
       prisma.contactMessage.count({ where: { isRead: false, isSpam: true, isArchived: false } }),
     ]);
-    return NextResponse.json({ messages, total, page, pageSize, unreadCounts: { inbox: unreadInbox, archived: unreadArchived, spam: unreadSpam } }, {
+    return NextResponse.json({ messages, total, page, pageSize, mailProvider: process.env.MAIL_PROVIDER || "resend", unreadCounts: { inbox: unreadInbox, archived: unreadArchived, spam: unreadSpam } }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {

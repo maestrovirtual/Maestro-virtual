@@ -1,3 +1,8 @@
+> Gmail institucional: la integración actual permite recibir contestaciones de
+> hilos vinculados y mostrar una conversación. Ver [GMAIL_SETUP.md](GMAIL_SETUP.md)
+> para habilitar OAuth. Las limitaciones de recepción mencionadas abajo se
+> refieren al proveedor Resend sin esa conexión.
+
 # MV-34: Bandeja de mensajes de contacto
 
 **Responsable:** Brandon · **Story Points:** 3 · **Épica:** Formulario de contacto funcional
@@ -227,3 +232,37 @@ fallos, ID reutilizado, respuestas duplicadas, ventana de reintento y caídas de
 red/base de datos. Se verificó en el navegador el editor real y su bloqueo por
 configuración faltante. No se enviaron respuestas reales: faltan RESEND_API_KEY
 y MAIL_FROM en la configuración local.
+
+
+## Conversaciones y Gmail
+
+El mensaje original y las contestaciones del contacto aparecen a la derecha;
+los envíos institucionales a la izquierda, con logo, nombre/autor, fecha y estado.
+Se conserva el editor, vista previa, historial paginado e intentos pendientes.
+Los mensajes de una conversación ya respondida se abren con su historial visible.
+
+`MAIL_PROVIDER=gmail` habilita la conexión institucional en el panel. La nueva
+integración OAuth se configura según [GMAIL_SETUP.md](GMAIL_SETUP.md). No se ha
+realizado una autorización real de Google en este entorno: faltan el cliente
+OAuth y su secreto. La pantalla lo indica y deshabilita Conectar/Enviar hasta
+que estén configurados.
+
+La migración `20261016030000_gmail_conversation` añade dirección/proveedor e IDs
+de hilo/borrador, una conexión cifrada de buzón y última actividad por contacto.
+Se aplicó a la base local configurada, conservando los mensajes. Otros entornos
+requieren aplicar las migraciones y configurar sus variables antes de desplegar.
+Las conversaciones se ordenan ahora por última actividad; se conserva la fecha
+del mensaje original para mostrarla correctamente dentro del hilo.
+
+Las pruebas de Gmail usan respuestas simuladas: OAuth/PKCE y vinculación de staff,
+cuenta correcta/permisos, cifrado, autorización, envío por borrador estable,
+reconciliación, recepción y deduplicación, remitente esperado, recuperación del
+cursor, HTML a texto, conversación y estados de conexión. La validación real
+con correo de ida/vuelta queda pendiente de la configuración de Google.
+
+
+Validación de conversación/Gmail: 236 pruebas Jest, lint, TypeScript y build.
+Las pruebas de navegador incluyen ahora la protección de conexión, callback y
+sincronización Gmail (9 pruebas Playwright de acceso en total). Los servicios
+Google se simularon: la autorización y el recorrido real siguen pendientes de
+las credenciales OAuth. No se conectó ni se envió correo desde Gmail.

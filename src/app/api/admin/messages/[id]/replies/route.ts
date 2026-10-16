@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma/client";
 import { getStaffUser, requireStaffApi } from "@/lib/auth/dal";
-import { contactMailSettings } from "@/lib/mail/contact-settings";
+import { replyMailSettings, sendGmailReply, gmailMessageId, GmailError } from "@/lib/mail/gmail";
 import { sendContactReply } from "@/services/mail/sendContactReply";
+
+export const maxDuration = 120;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 type Context = { params: Promise<{ id: string }> };
@@ -26,8 +28,8 @@ export async function GET(request: Request, { params }: Context) {
       prisma.contactReply.count({ where: { messageId: id, status: "PENDING" } }),
     ]);
     const staffId = (await getStaffUser())?.id;
-    const history = replies.map(reply => ({ ...reply, canRetry: reply.staffId === staffId && reply.status !== "SENT" && Date.now() - reply.createdAt.getTime() <= 23 * 60 * 60 * 1000 }));
-    return NextResponse.json({ replies: history, total, hasPending: pendingCount > 0, page, pageSize: 20, staffId, mail: contactMailSettings() }, { headers: privateHeaders });
+    const history = replies.map(reply => ({ ...reply, canRetry: reply.direction !== "INBOUND" && reply.staffId === staffId && reply.status !== "SENT" && (reply.provider === "gmail" || Date.now() - reply.createdAt.getTime() <= 23 * 60 * 60 * 1000) }));
+    return NextResponse.json({ replies: history, total, hasPending: pendingCount > 0, page, pageSize: 20, staffId, mail: await replyMailSettings() }, { headers: privateHeaders });
   } catch (error) {
     console.error("Error al cargar respuestas:", error);
     return NextResponse.json({ error: "No se pudo cargar el historial de respuestas" }, { status: 500 });
@@ -65,18 +67,18 @@ export async function POST(request: Request, { params }: Context) {
     }
     if (reply?.status === "SENT") return NextResponse.json({ reply }, { headers: privateHeaders });
     if (message.isSpam) return NextResponse.json({ error: "Marca No es spam antes de responder desde el panel" }, { status: 409 });
-    const mail = contactMailSettings();
+    const mail = await replyMailSettings(reply?.provider);
     if (!mail.ready) return NextResponse.json({ error: mail.issues.join(" ") }, { status: 503 });
 
     // Resend conserva la clave durante 24 h. Fuera de esa ventana no se
     // reintenta automáticamente, para no duplicar un envío incierto.
-    if (reply && Date.now() - reply.createdAt.getTime() > 23 * 60 * 60 * 1000) {
+    if (reply && reply.provider !== "gmail" && Date.now() - reply.createdAt.getTime() > 23 * 60 * 60 * 1000) {
       return NextResponse.json({ error: "Este intento requiere revisión en Resend antes de volver a enviar" }, { status: 409 });
     }
     try {
       if (!reply) {
         reply = await prisma.contactReply.create({ data: {
-          id: body.requestId, messageId: id, staffId: staff.id, staffName: staff.name,
+          id: body.requestId, messageId: id, provider: mail.provider, staffId: staff.id, staffName: staff.name,
           fromEmail: mail.from, toEmail: message.email, replyTo: mail.replyTo,
           subject, body: text,
         } });
@@ -92,6 +94,22 @@ export async function POST(request: Request, { params }: Context) {
         return NextResponse.json({ error: "Ya hay un envío en proceso. Revisa el historial antes de intentar otro." }, { status: 409 });
       }
       throw error;
+    }
+
+    if (reply.provider === "gmail") {
+      try {
+        const result = await sendGmailReply(reply);
+        reply = await prisma.contactReply.update({ where: { id: reply.id }, data: { status: "SENT", providerId: result.id, providerThreadId: result.threadId, rfcMessageId: gmailMessageId(reply.id), sentAt: new Date(), error: null } });
+        await prisma.contactMessage.update({ where: { id }, data: { lastActivityAt: new Date() } });
+        return NextResponse.json({ reply }, { headers: privateHeaders });
+      } catch (error) {
+        const definite = error instanceof GmailError && error.definitive;
+        const note = definite ? "Gmail rechazó el envío. Revisa la autorización y la cuota de la cuenta." : "No se pudo confirmar el envío. Reintenta el mismo borrador para consultar su estado; no redactes otro.";
+        await prisma.contactReply.updateMany({ where: { id: reply.id, status: { not: "SENT" } }, data: { status: definite ? "FAILED" : "PENDING", error: note } });
+        const current = await prisma.contactReply.findUnique({ where: { id: reply.id } });
+        if (current?.status === "SENT") return NextResponse.json({ reply: current }, { headers: privateHeaders });
+        return NextResponse.json({ reply: current, error: note }, { status: 502 });
+      }
     }
 
     let result;

@@ -4,12 +4,15 @@ import { GET, POST } from '@/app/api/admin/messages/[id]/replies/route';
 import prisma from '@/lib/prisma/client';
 import { getStaffUser, requireStaffApi } from '@/lib/auth/dal';
 import { contactMailSettings } from '@/lib/mail/contact-settings';
+import { sendGmailReply, GmailError } from '@/lib/mail/gmail';
 import { sendContactReply } from '@/services/mail/sendContactReply';
 jest.mock('@/lib/auth/dal', () => ({ requireStaffApi: jest.fn(), getStaffUser: jest.fn() }));
 jest.mock('@/lib/mail/contact-settings', () => ({ contactMailSettings: jest.fn() }));
+jest.mock('@/lib/mail/gmail', () => ({ ...jest.requireActual('@/lib/mail/gmail'), sendGmailReply: jest.fn() }));
 jest.mock('@/services/mail/sendContactReply', () => ({ sendContactReply: jest.fn() }));
 jest.mock('@/lib/prisma/client', () => ({ __esModule: true, default: {
-  contactMessage: { findUnique: jest.fn() },
+  contactMessage: { findUnique: jest.fn(), update: jest.fn() },
+  contactMailbox: { findUnique: jest.fn() },
   contactReply: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn(), findMany: jest.fn(), count: jest.fn() },
   $transaction: jest.fn(),
 } }));
@@ -21,6 +24,7 @@ const record = { id, messageId: 'contact-1', staffId: 'staff-1', staffName: 'Bra
 const req = (body: unknown = input, headers: Record<string, string> = { 'Content-Type': 'application/json' }) => new Request('http://localhost/api/admin/messages/contact-1/replies', { method: 'POST', headers, body: JSON.stringify(body) });
 beforeEach(() => {
   jest.resetAllMocks();
+  process.env.MAIL_PROVIDER = "resend";
   (requireStaffApi as jest.Mock).mockResolvedValue(null);
   (getStaffUser as jest.Mock).mockResolvedValue({ id: 'staff-1', name: 'Brandon' });
   (contactMailSettings as jest.Mock).mockReturnValue(mail);
@@ -137,4 +141,28 @@ test('a failed retry never downgrades an attempt already completed concurrently'
   expect((await POST(req(), context)).status).toBe(200);
   expect(prisma.contactReply.updateMany).toHaveBeenCalledWith({ where: { id, status: 'FAILED' }, data: { status: 'PENDING', error: null } });
   expect(sendContactReply).not.toHaveBeenCalled();
+});
+
+test('Gmail mode sends with the connected institution and persists the provider thread', async () => {
+  process.env.GMAIL_ACCOUNT_EMAIL = 'institution@gmail.com';
+  process.env.GMAIL_CLIENT_ID = 'client';
+  process.env.GMAIL_CLIENT_SECRET = 'secret';
+  process.env.GMAIL_OAUTH_REDIRECT_URI = 'http://localhost/callback';
+  (prisma.contactMailbox.findUnique as jest.Mock).mockResolvedValue({ email: 'institution@gmail.com' });
+  (prisma.contactReply.findUnique as jest.Mock).mockResolvedValue({ ...record, provider: 'gmail', replyTo: 'institution@gmail.com', fromEmail: 'institution@gmail.com' });
+  (sendGmailReply as jest.Mock).mockResolvedValue({ id: 'gmail-sent-1', threadId: 'thread-1' });
+  expect((await POST(req(), context)).status).toBe(200);
+  expect(prisma.contactReply.update).toHaveBeenCalledWith({ where: { id }, data: expect.objectContaining({ status: 'SENT', providerId: 'gmail-sent-1', providerThreadId: 'thread-1' }) });
+  expect(sendContactReply).not.toHaveBeenCalled();
+});
+test('a revoked Gmail authorization does not turn a prior uncertain send into a definite failure', async () => {
+  process.env.GMAIL_ACCOUNT_EMAIL = 'institution@gmail.com';
+  process.env.GMAIL_CLIENT_ID = 'client';
+  process.env.GMAIL_CLIENT_SECRET = 'secret';
+  process.env.GMAIL_OAUTH_REDIRECT_URI = 'http://localhost/callback';
+  (prisma.contactMailbox.findUnique as jest.Mock).mockResolvedValue({ email: 'institution@gmail.com' });
+  (prisma.contactReply.findUnique as jest.Mock).mockResolvedValue({ ...record, provider: 'gmail', gmailDraftId: 'draft-1' });
+  (sendGmailReply as jest.Mock).mockRejectedValue(new GmailError(400, 'Authorization revoked'));
+  expect((await POST(req(), context)).status).toBe(502);
+  expect(prisma.contactReply.updateMany).toHaveBeenCalledWith({ where: { id, status: { not: 'SENT' } }, data: expect.objectContaining({ status: 'PENDING' }) });
 });

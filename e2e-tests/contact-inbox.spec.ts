@@ -22,3 +22,9 @@ test('MV-34: protege historial y envío de respuestas sin sesión', async ({ req
   const send = await request.post('/api/admin/messages/missing/replies', { data: { subject: 'Prueba', body: 'Mensaje' } });
   expect(send.status()).toBe(401);
 });
+
+test('MV-34: protege conexión y sincronización de Gmail sin sesión', async ({ request }) => {
+  for (const path of ['/api/admin/mailbox/gmail', '/api/admin/mailbox/gmail/connect', '/api/admin/mailbox/gmail/callback']) expect((await request.get(path)).status()).toBe(401);
+  expect((await request.post('/api/admin/mailbox/gmail', { data: {} })).status()).toBe(401);
+  expect((await request.delete('/api/admin/mailbox/gmail', { data: {} })).status()).toBe(401);
+});
