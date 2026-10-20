@@ -39,11 +39,11 @@ test.describe('Tarea 25: Pruebas E2E del panel de administración (Staff)', () =
   // problemas al acceder a dichas secciones
   // ------------------------------------------------------------------
 
-  test.skip('Debe crear un nuevo curso de prueba', async ({ page }) => {
+  test.skip('Debe crear un nuevo curso de prueba', async () => {
     // Pendiente de conectar con el formulario real de creación
   });
 
-  test.skip('Debe validar error al intentar guardar un curso sin título', async ({ page }) => {
+  test.skip('Debe validar error al intentar guardar un curso sin título', async () => {
     // Pendiente de validaciones de formulario
   });
 
