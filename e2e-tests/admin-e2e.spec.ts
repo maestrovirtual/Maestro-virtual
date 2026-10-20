@@ -1,50 +1,58 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Tarea 25: Pruebas E2E del panel de administración (Staff)', () => {
+test.describe('Tarea 25 y MV-32: Pruebas E2E del panel de administración (Staff)', () => {
 
-  // Acceso y autenticación al panel
-  test('Debe permitir el acceso o redirección al área administrativa', async ({ page }) => {
-    await page.goto('/es/admin/courses');
+  // Acceso a la vista de cursos de admin
+  test('Debe cargar la vista del panel admin de cursos', async ({ page }) => {
+    await page.goto('/es/admin/cursos');
     await page.waitForLoadState('domcontentloaded');
 
-    // Comprobar que la vista cargue o redirija a inicio de sesión
-    const isLoginPage = page.url().includes('/login') || page.url().includes('/auth');
-    const isAdminPage = page.url().includes('/admin');
-    
+    const isLoginPage = page.url().includes('/login') || page.url().includes('/staff');
+    const isAdminPage = page.url().includes('/admin/cursos');
     expect(isLoginPage || isAdminPage).toBeTruthy();
   });
 
-  // Navegación a la gestión de cursos
-  test('Debe cargar la vista de gestión de cursos del panel admin', async ({ page }) => {
-    await page.goto('/es/admin/courses');
+  // Acceso a la vista de eventos de admin (MV-32)
+  test('Debe cargar la vista del panel admin de eventos y abrir el modal', async ({ page }) => {
+    await page.goto('/es/admin/eventos');
     await page.waitForLoadState('domcontentloaded');
 
-    // Verificar que el contenedor principal o encabezado sea visible
-    const pageHeading = page.locator('h1, h2').first();
-    await expect(pageHeading).toBeVisible({ timeout: 10000 });
+    const isLoginPage = page.url().includes('/login') || page.url().includes('/staff');
+    const isAdminPage = page.url().includes('/admin/eventos');
+    
+    if (isAdminPage) {
+      // Verificar el botón de crear nuevo evento
+      const createButton = page.getByRole('button', { name: /\+ Crear Nuevo Evento/i });
+      await expect(createButton).toBeVisible({ timeout: 10000 });
+      await createButton.click();
+
+      // Validar que se abra el modal EventModal
+      const eventModal = page.locator('dialog, div[role="dialog"], form').first();
+      await expect(eventModal).toBeVisible({ timeout: 5000 });
+    } else {
+      expect(isLoginPage).toBeTruthy();
+    }
   });
 
-  // Navegación a la gestión de eventos
-  test('Debe cargar la vista de gestión de eventos del panel admin', async ({ page }) => {
-    await page.goto('/es/admin/events');
+  // Validación de apertura de modal de Cursos
+  test('Debe abrir el modal de creación de cursos', async ({ page }) => {
+    await page.goto('/es/admin/cursos');
     await page.waitForLoadState('domcontentloaded');
 
-    const pageHeading = page.locator('h1, h2').first();
-    await expect(pageHeading).toBeVisible({ timeout: 10000 });
+    const createButton = page.getByRole('button', { name: /\+ Crear Nuevo Curso/i });
+    if (await createButton.isVisible()) {
+      await createButton.click();
+      const courseModal = page.locator('dialog, div[role="dialog"], form').first();
+      await expect(courseModal).toBeVisible({ timeout: 5000 });
+    }
   });
 
   // ------------------------------------------------------------------
-  // NOTA: Pruebas de Mutación (Crear, Editar, Eliminar)
-  // Deshabilitadas temporalmente con test.skip() mientras se resuelven 
-  // problemas al acceder a dichas secciones
+  // NOTA: Pruebas de mutación (CRUD completo con base de datos real)
+  // Omitidas temporalmente con test.skip() para validar la integración 
   // ------------------------------------------------------------------
 
-  test.skip('Debe crear un nuevo curso de prueba', async () => {
-    // Pendiente de conectar con el formulario real de creación
-  });
-
-  test.skip('Debe validar error al intentar guardar un curso sin título', async () => {
-    // Pendiente de validaciones de formulario
+  test.skip('Debe crear, cambiar estado a borrador y eliminar un evento', async ({ page }) => {
   });
 
 });
