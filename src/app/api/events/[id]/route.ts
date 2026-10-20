@@ -49,11 +49,28 @@ export async function PUT(
     const id = resolvedParams.id;
     const body = await request.json();
 
-    // Si mandan fecha, hay que parsearla de nuevo
-    const dataToUpdate = { ...body };
+    const dataToUpdate: Record<string, unknown> = { ...body };
+
     if (dataToUpdate.date) {
-      dataToUpdate.date = new Date(dataToUpdate.date);
+      dataToUpdate.date = new Date(dataToUpdate.date as string);
     }
+
+    if (dataToUpdate.modality) {
+      const isPresencial =
+        dataToUpdate.modality === "presencial" ||
+        dataToUpdate.modality === "IN_PERSON" ||
+        String(dataToUpdate.modality).toLowerCase() === "in_person";
+      dataToUpdate.modality = isPresencial ? "IN_PERSON" : "ONLINE";
+    }
+
+    if (dataToUpdate.isActive !== undefined) {
+      dataToUpdate.isActive = Boolean(dataToUpdate.isActive);
+    }
+
+    delete dataToUpdate.id;
+    delete dataToUpdate.createdAt;
+    delete dataToUpdate.updatedAt;
+    delete dataToUpdate.enrollments;
 
     const updatedEvent = await prisma.event.update({
       where: { id: id },
@@ -71,7 +88,7 @@ export async function PUT(
 }
 
 // ==========================================
-// DELETE: Eliminar un evento (Soft Delete)
+// DELETE: Eliminar un evento (Eliminación física)
 // ==========================================
 export async function DELETE(
   request: Request,
@@ -84,10 +101,17 @@ export async function DELETE(
     const resolvedParams = await params;
     const id = resolvedParams.id;
 
-    const deletedEvent = await prisma.event.update({
-      where: { id: id },
-      data: { isActive: false },
-    });
+    let deletedEvent;
+    if (typeof prisma.event.delete === "function") {
+      deletedEvent = await prisma.event.delete({
+        where: { id: id },
+      });
+    } else {
+      deletedEvent = await prisma.event.update({
+        where: { id: id },
+        data: { isActive: false },
+      });
+    }
 
     return NextResponse.json(
       { message: "Evento eliminado correctamente", event: deletedEvent },
