@@ -7,15 +7,24 @@ import { requireStaffApi } from "@/lib/auth/dal";
 // ==========================================
 // GET: Obtener todos los cursos activos
 // ==========================================
-export async function GET() {
+export async function GET(request?: Request) {
   try {
+    let includeAll = false;
+    if (request && request.url) {
+      try {
+        const { searchParams } = new URL(request.url);
+        includeAll = searchParams.get("all") === "true";
+      } catch {
+        // ignore
+      }
+    }
+
     const courses = await prisma.course.findMany({
-      where: {
-        isActive: true,
-      },
+      where: includeAll ? undefined : { isActive: true },
       include: {
         testimonials: true,
       },
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(courses, { status: 200 });
@@ -77,6 +86,7 @@ const newCourse = await prisma.course.create({
     featured: body.featured ?? false,
     featuredOrder: body.featuredOrder != null ? Number(body.featuredOrder) : null,
     clickable: body.clickable ?? true,
+    isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
   },
 });
 

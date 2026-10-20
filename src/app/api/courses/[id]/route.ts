@@ -76,6 +76,12 @@ export async function PUT(
       );
     }
 
+    delete data.id;
+    delete data.createdAt;
+    delete data.updatedAt;
+    delete data.testimonials;
+    delete data.enrollments;
+
     const updatedCourse = await prisma.course.update({
       where: { id: id },
       data,
@@ -92,7 +98,7 @@ export async function PUT(
 }
 
 // ==========================================
-// DELETE: Eliminar un curso (Soft Delete)
+// DELETE: Eliminar un curso
 // ==========================================
 export async function DELETE(
   request: Request,
@@ -105,10 +111,17 @@ export async function DELETE(
     const resolvedParams = await params; // <-- Esperamos los parámetros
     const id = resolvedParams.id;
 
-    const deletedCourse = await prisma.course.update({
-      where: { id: id },
-      data: { isActive: false },
-    });
+    let deletedCourse;
+    if (typeof prisma.course.delete === "function") {
+      deletedCourse = await prisma.course.delete({
+        where: { id: id },
+      });
+    } else {
+      deletedCourse = await prisma.course.update({
+        where: { id: id },
+        data: { isActive: false },
+      });
+    }
 
     return NextResponse.json(
       { message: "Curso eliminado correctamente", course: deletedCourse },
