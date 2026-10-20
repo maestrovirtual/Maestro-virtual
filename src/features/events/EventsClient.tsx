@@ -32,19 +32,33 @@ export default function EventsClient({ eventosDelBackend }: EventsSectionProps) 
   const safeEvents = useMemo(() => eventosDelBackend ?? mockEvents, [eventosDelBackend]);
 
   const sortedEvents = useMemo(
-    () => [...safeEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    () =>
+      [...safeEvents].sort((a, b) => {
+        const dateA = new Date(String(a.date).includes('T') ? a.date : `${a.date}T00:00:00`).getTime();
+        const dateB = new Date(String(b.date).includes('T') ? b.date : `${b.date}T00:00:00`).getTime();
+        return dateA - dateB;
+      }),
     [safeEvents]
   );
 
   const nextEvent = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return sortedEvents.find((event) => new Date(`${event.date}T00:00:00`) >= today);
+    return sortedEvents.find((event) => {
+      const d = new Date(String(event.date).includes('T') ? event.date : `${event.date}T00:00:00`);
+      return d >= today;
+    });
   }, [sortedEvents]);
 
   const filteredEvents = useMemo(() => {
     if (activeFilter === 'todos') return sortedEvents;
-    return sortedEvents.filter((event) => event.modality === activeFilter);
+    return sortedEvents.filter((event) => {
+      const m = String(event.modality).toLowerCase();
+      if (activeFilter === 'online') {
+        return m === 'online';
+      }
+      return m === 'presencial' || m === 'in_person';
+    });
   }, [activeFilter, sortedEvents]);
 
   return (

@@ -3,54 +3,86 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { deleteCourseAction } from "@/features/admin/actions/course.actions";
 import type { AdminCourse } from "../types/course.types";
+import type { AdminEvent } from "../types/event.types";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
-  course: AdminCourse | null;
+  course?: AdminCourse | null;
+  event?: AdminEvent | null;
   onClose: () => void;
-  onDeleted: (courseId: string) => void;
+  onDeleted: (id: string) => void;
 }
 
 export default function DeleteConfirmModal({
   isOpen,
   course,
+  event,
   onClose,
   onDeleted,
 }: DeleteConfirmModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen || !course) return null;
+  const targetItem = event || course;
+  if (!isOpen || !targetItem) return null;
+
+  const isEvent = Boolean(event);
+  const itemTypeLabel = isEvent ? "evento" : "curso";
+  const itemTypeLabelCapitalized = isEvent ? "Evento" : "Curso";
 
   const handleDelete = async () => {
     setIsDeleting(true);
     setError(null);
 
     try {
-      // 1. Intentamos primero vía Server Action
-      const actionResult = await deleteCourseAction(course.id);
+      if (isEvent && event) {
+        // 1. Intentamos vía Server Action de eventos
+        const { deleteEventAction } = await import("@/features/admin/actions/event.actions");
+        const actionResult = await deleteEventAction(event.id);
 
-      if (!actionResult.success) {
-        // 2. Si falla la Server Action, intentamos vía Endpoint REST
-        const response = await fetch(`/api/courses/${course.id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        });
+        if (!actionResult.success) {
+          // 2. Si falla la Server Action, intentamos vía Endpoint REST
+          const response = await fetch(`/api/events/${event.id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || actionResult.error || "No se pudo eliminar el curso."
-          );
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || actionResult.error || "No se pudo eliminar el evento."
+            );
+          }
         }
-      }
 
-      onDeleted(course.id);
-      onClose();
+        onDeleted(event.id);
+        onClose();
+      } else if (course) {
+        // 1. Intentamos vía Server Action de cursos
+        const { deleteCourseAction } = await import("@/features/admin/actions/course.actions");
+        const actionResult = await deleteCourseAction(course.id);
+
+        if (!actionResult.success) {
+          // 2. Si falla la Server Action, intentamos vía Endpoint REST
+          const response = await fetch(`/api/courses/${course.id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || actionResult.error || "No se pudo eliminar el curso."
+            );
+          }
+        }
+
+        onDeleted(course.id);
+        onClose();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado al eliminar.");
+      setError(err instanceof Error ? err.message : `Error inesperado al eliminar el ${itemTypeLabel}.`);
     } finally {
       setIsDeleting(false);
     }
@@ -74,12 +106,12 @@ export default function DeleteConfirmModal({
               id="delete-dialog-title"
               className="text-lg font-bold tracking-tight text-text-primary"
             >
-              ¿Eliminar curso?
+              ¿Eliminar {itemTypeLabel}?
             </h3>
             <p className="mt-2 text-sm text-text-secondary leading-relaxed">
               ¿Estás seguro de que deseas eliminar{" "}
               <strong className="text-text-primary font-semibold">
-                &ldquo;{course.title}&rdquo;
+                &ldquo;{targetItem.title}&rdquo;
               </strong>
               ? Esta acción no se puede deshacer.
             </p>
@@ -114,7 +146,7 @@ export default function DeleteConfirmModal({
                 <span>Eliminando...</span>
               </>
             ) : (
-              "Eliminar Curso"
+              `Eliminar ${itemTypeLabelCapitalized}`
             )}
           </Button>
         </div>
