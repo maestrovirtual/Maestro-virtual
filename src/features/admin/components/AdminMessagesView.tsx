@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import GmailConnection from "./GmailConnection";
 import ContactReplyWorkspace from "./ContactReplyWorkspace";
 import { useLocale } from "next-intl";
-import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Forward, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
 
 type ContactMessage = {
   _count?: { replies: number };
@@ -121,6 +121,19 @@ export default function AdminMessagesView() {
     } finally { setPendingId(null); }
   }
 
+  async function forwardMessage(message: ContactMessage) {
+    setPendingId(message.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/messages/${encodeURIComponent(message.id)}/forward`, { method: "POST" });
+      if (!response.ok) throw new Error("No se pudo reenviar el mensaje. Intenta de nuevo.");
+      setNotice("Mensaje reenviado a Maestro Virtual.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo reenviar el mensaje.");
+    } finally { setPendingId(null); }
+  }
+
   async function toggleRead(message: ContactMessage) {
     setPendingId(message.id);
     setError("");
@@ -203,7 +216,8 @@ export default function AdminMessagesView() {
                       </button>
                       {isSelected && <div id={`message-${message.id}`} className="mx-4 mb-5 rounded-xl border border-slate-200 bg-white p-5 sm:ml-20 sm:mr-6 sm:p-6"><ContactReplyWorkspace autoOpen={!!message._count?.replies} refreshVersion={mailSyncVersion} message={message} onSent={() => void load()} onBusyChange={busy => setPendingId(busy ? message.id : null)} /></div>}
                       <div className="flex flex-wrap justify-end gap-2 px-5 pb-4 sm:px-7">{view !== "spam" && <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isArchived: !message.isArchived }, message.isArchived ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje archivado. Puedes recuperarlo en Archivados.")}>{view === "archived" ? <ArchiveRestore size={14} aria-hidden="true" /> : <Archive size={14} aria-hidden="true" />}{view === "archived" ? "Devolver a la bandeja" : "Archivar"}</button>}
-                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button></div>
+                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button>
+                      <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void forwardMessage(message)}><Forward size={14} aria-hidden="true" />Reenviar a Maestro Virtual</button></div>
                     </li>
                   );
                 })}
