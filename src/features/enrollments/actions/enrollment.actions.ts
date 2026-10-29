@@ -89,4 +89,3 @@ export async function enrollUserAction(
         : "¡Te has inscrito al evento con éxito!",
   };
 }
-

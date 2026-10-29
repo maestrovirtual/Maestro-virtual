@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
-import {
-  enrollUserAction,
-  type EnrollmentItemType,
-} from "@/features/enrollments/actions/enrollment.actions";
+import type { EnrollmentItemType } from "@/features/enrollments/actions/enrollment.actions";
 
 export interface EnrollButtonProps {
   itemId: string;
@@ -26,6 +23,14 @@ type FeedbackState = {
   message: string;
 } | null;
 
+function useSafeRouter() {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
+}
+
 export default function EnrollButton({
   itemId,
   itemType,
@@ -36,14 +41,12 @@ export default function EnrollButton({
   label = "Inscribirme",
   accentColor,
 }: EnrollButtonProps) {
-  const router = useRouter();
+  const router = useSafeRouter();
   const [isPending, startTransition] = useTransition();
-  const [enrolled, setEnrolled] = useState<boolean>(isEnrolled);
+  const [enrolledLocally, setEnrolledLocally] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
-  useEffect(() => {
-    setEnrolled(isEnrolled);
-  }, [isEnrolled]);
+  const enrolled = isEnrolled || enrolledLocally;
 
   if (enrolled) {
     return (
@@ -83,26 +86,29 @@ export default function EnrollButton({
     setFeedback(null);
 
     if (!isLoggedIn) {
-      router.push(`/login?next=${currentPath}`);
+      router?.push(`/login?next=${currentPath}`);
       return;
     }
 
     startTransition(async () => {
       try {
+        const { enrollUserAction } = await import(
+          "@/features/enrollments/actions/enrollment.actions"
+        );
         const result = await enrollUserAction(itemId, itemType, currentPath);
 
         if (result.success) {
-          setEnrolled(true);
+          setEnrolledLocally(true);
           setFeedback({
             type: "success",
             message: result.message,
           });
-          router.refresh?.();
+          router?.refresh?.();
           return;
         }
 
         if (result.error === "Ya estás inscrito") {
-          setEnrolled(true);
+          setEnrolledLocally(true);
         }
 
         setFeedback({
@@ -116,7 +122,7 @@ export default function EnrollButton({
             : "Ocurrió un error al procesar tu inscripción.";
 
         if (message.includes("401")) {
-          router.push(`/login?next=${currentPath}`);
+          router?.push(`/login?next=${currentPath}`);
           return;
         }
 
@@ -180,4 +186,3 @@ export default function EnrollButton({
     </div>
   );
 }
-
