@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   Clock3,
   Users,
   Monitor
@@ -10,12 +9,16 @@ import {
 import { motion } from "framer-motion";
 
 import Container from "@/components/ui/Container";
+import EnrollButton from "@/features/enrollments/components/EnrollButton";
 
 import type { Course } from "../data/courses";
 
 
 type CourseCTAProps = {
   course: Course;
+  isEnrolled?: boolean;
+  isLoggedIn?: boolean;
+  currentPath?: string;
 };
 
 
@@ -43,7 +46,10 @@ return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 
 
 export default function CourseCTA({
-course
+course,
+isEnrolled = false,
+isLoggedIn = false,
+currentPath
 }:CourseCTAProps){
 
 
@@ -360,63 +366,18 @@ de una experiencia diseñada para docentes.
 
 
 
-<motion.button
-
-
-whileHover={{
-scale:1.05
-}}
-
-whileTap={{
-scale:.96
-}}
-
-
-className="
-mt-10
-group
-flex
-items-center
-gap-4
-rounded-full
-px-10
-py-5
-text-lg
-font-bold
-shadow-2xl
-transition
-"
-
-style={{
-
-backgroundColor:"white",
-
-color:course.color
-
-}}
-
->
-
-
-Inscribirme al curso
-
-
-<span
-
-className="
-transition-transform
-group-hover:translate-x-2
-"
-
->
-
-<ArrowRight size={24}/>
-
-</span>
-
-
-
-</motion.button>
+<div className="mt-10">
+<EnrollButton
+  itemId={course.id}
+  itemType="COURSE"
+  isEnrolled={isEnrolled}
+  isLoggedIn={isLoggedIn}
+  currentPath={currentPath ?? `/courses/${course.slug}`}
+  accentColor={course.color}
+  label="Inscribirme al curso"
+  className="px-10 py-5 text-lg font-bold shadow-2xl"
+/>
+</div>
 
 
 
