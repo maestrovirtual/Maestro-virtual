@@ -45,16 +45,33 @@ enum BackgroundPattern {
 }
 
 model User {
-  id             String       @id @default(uuid())
-  name           String
-  email          String       @unique
-  hashedPassword String
-  role           Role         @default(USER)
-  enrollments    Enrollment[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                  String               @id @default(uuid())
+  name                String
+  email               String               @unique
+  hashedPassword      String
+  // Al cambiar la contraseña se invalidan las sesiones emitidas antes (MV-36).
+  passwordChangedAt   DateTime?
+  role                Role                 @default(USER)
+  enrollments         Enrollment[]
+  passwordResetTokens PasswordResetToken[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([email])
+}
+
+// Enlaces de recuperación de contraseña (MV-36). Solo se guarda el hash
+// SHA-256 del token: con una copia de la base no se puede usar el enlace.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Course {
