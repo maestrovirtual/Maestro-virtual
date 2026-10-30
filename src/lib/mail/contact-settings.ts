@@ -3,7 +3,7 @@ const EMAIL = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 export function contactMailSettings() {
   const from = (process.env.MAIL_FROM ?? "").trim();
   const address = from.match(/^[^<>\r\n]*<([^<>]+)>$/)?.[1] ?? from;
-  const replyTo = (process.env.MAIL_REPLY_TO || process.env.CONTACT_EMAIL || address).trim();
+  const replyTo = (process.env.MAIL_REPLY_TO || address).trim();
   const issues: string[] = [];
   if (!process.env.RESEND_API_KEY?.trim()) issues.push("Falta configurar RESEND_API_KEY.");
   if (!EMAIL.test(address) || /[\r\n]/.test(from) || address.toLowerCase().endsWith("@resend.dev")) {
