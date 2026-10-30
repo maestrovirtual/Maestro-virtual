@@ -37,3 +37,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: "No se pudo actualizar el mensaje" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const denied = await requireStaffApi();
+    if (denied) return denied;
+    const { id } = await context.params;
+    const result = await prisma.contactMessage.deleteMany({ where: { id } });
+    if (!result.count) return NextResponse.json({ error: "Mensaje no encontrado" }, { status: 404 });
+    return NextResponse.json({ success: true, deleted: result.count });
+  } catch (error) {
+    console.error("Error al eliminar mensaje:", error);
+    return NextResponse.json({ error: "No se pudo eliminar el mensaje" }, { status: 500 });
+  }
+}
