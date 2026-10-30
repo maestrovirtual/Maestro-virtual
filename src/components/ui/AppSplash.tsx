@@ -21,6 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 const STORAGE_KEY = 'mv-splash-shown';
 const REPLAY_EVENT = 'mv-splash-replay';
 const CTA_DELAY_MS = 1400;
+const AUTO_CLOSE_MS = 6000;
 
 type SplashState = { id: number; visible: boolean };
 type Ripple = { x: number; y: number; size: number };
@@ -53,7 +54,13 @@ export default function AppSplash() {
     setShowCta(false);
     setRipple(null);
     const timer = setTimeout(() => setShowCta(true), CTA_DELAY_MS);
-    return () => clearTimeout(timer);
+    const autoCloseTimer = setTimeout(() => {
+      setRipple({ x: window.innerWidth / 2, y: window.innerHeight / 2, size: Math.hypot(window.innerWidth, window.innerHeight) * 2.2 });
+    }, AUTO_CLOSE_MS);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(autoCloseTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id]);
 

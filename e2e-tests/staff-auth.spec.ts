@@ -28,7 +28,7 @@ test.describe('MV-33: Autenticacion de staff para el panel', () => {
 
     await page.goto('/es/staff/login');
     await page.waitForLoadState('domcontentloaded');
-    await page.locator('.app-splash-overlay').waitFor({ state: 'hidden', timeout: 10000 });
+    await page.locator('.app-splash-overlay').waitFor({ state: 'hidden', timeout: 15000 });
 
     await page.getByLabel('Correo').fill('no-existe@maestrovirtual.test');
     await page.getByLabel('Contraseña').fill('contraseña-incorrecta');
