@@ -19,9 +19,9 @@ export type EnrollActionResult =
     };
 
 export async function enrollUserAction(
-  itemId: string,
-  type: EnrollmentItemType,
-  currentPath?: string
+  itemIdOrFormData: string | FormData,
+  typeArg?: EnrollmentItemType,
+  currentPathArg?: string
 ): Promise<EnrollActionResult> {
   const user = await getCurrentUser();
 
@@ -29,7 +29,21 @@ export async function enrollUserAction(
     throw new Error("401 Unauthorized");
   }
 
-  const trimmedId = itemId?.trim();
+  const rawItemId =
+    itemIdOrFormData instanceof FormData
+      ? String(itemIdOrFormData.get("itemId") ?? "")
+      : itemIdOrFormData;
+  const type = (
+    itemIdOrFormData instanceof FormData
+      ? String(itemIdOrFormData.get("itemType") ?? "")
+      : typeArg
+  ) as EnrollmentItemType;
+  const currentPath =
+    itemIdOrFormData instanceof FormData
+      ? String(itemIdOrFormData.get("currentPath") ?? "").trim() || undefined
+      : currentPathArg;
+
+  const trimmedId = rawItemId?.trim();
   if (!trimmedId) {
     return {
       success: false,
