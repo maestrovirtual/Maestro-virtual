@@ -8,7 +8,7 @@ export default async function PublicLayout({ children }: { children: React.React
 
     return (
         <>
-            <Navbar userName={user?.name ?? null} />
+            <Navbar session={user} userName={user?.name ?? null} />
             <main className="flex-1">{children}</main>
             <Footer />
         </>
