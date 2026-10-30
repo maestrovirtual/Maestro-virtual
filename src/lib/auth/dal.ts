@@ -2,8 +2,9 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { SESSION_COOKIE } from "@/lib/auth/session";
+import { SESSION_COOKIE, USER_SESSION_COOKIE } from "@/lib/auth/session";
 import { checkStaffToken, type StaffUser } from "@/lib/auth/staff";
+import { checkUserToken, type CurrentUser } from "@/lib/auth/user";
 
 async function checkStaff() {
   return checkStaffToken((await cookies()).get(SESSION_COOKIE)?.value);
@@ -13,6 +14,11 @@ async function checkStaff() {
 export const getStaffUser = cache(async (): Promise<StaffUser | null> => {
   const result = await checkStaff();
   return result.status === "ok" ? result.user : null;
+});
+
+// Para paginas de usuarios finales (MV-36): null si no hay sesion valida.
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  return checkUserToken((await cookies()).get(USER_SESSION_COOKIE)?.value);
 });
 
 // Para Route Handlers: devuelve la respuesta de error, o null si es staff.

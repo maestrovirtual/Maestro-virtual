@@ -18,7 +18,8 @@ const navLinks = [
   { label: "Eventos", href: "/events" },
 ];
 
-export default function Navbar() {
+// userName: nombre del usuario con sesion iniciada, o null (MV-36).
+export default function Navbar({ userName = null }: { userName?: string | null }) {
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -199,9 +200,11 @@ export default function Navbar() {
 
           {/* Iniciar sesión — pastilla ghost que espeja el lenguaje
               visual del círculo de perfil (misma altura, mismo glass).
-              Aún no navega: sólo tooltip "Próximamente". */}
-          <button
-            type="button"
+              Lleva al login de usuarios; con sesion muestra el nombre y
+              /login enseña la cuenta y "Cerrar sesión" (MV-36). */}
+          <Link
+            href="/login"
+            title={userName ? "Mi cuenta" : undefined}
             className={clsx(
               `
               group
@@ -248,48 +251,12 @@ export default function Navbar() {
                 `
             )}
           >
-            Iniciar sesión
-
-            {/* Tooltip Próximamente */}
-
-            <span
-              className="
-              pointer-events-none
-
-              absolute
-              top-[calc(100%+12px)]
-              left-1/2
-
-              -translate-x-1/2
-              translate-y-1
-
-              whitespace-nowrap
-
-              rounded-full
-
-              bg-text-primary
-
-              px-3
-              py-1.5
-
-              text-[11px]
-              font-medium
-              text-white
-
-              opacity-0
-
-              shadow-xl
-
-              transition-all
-              duration-300
-
-              group-hover:translate-y-0
-              group-hover:opacity-100
-              "
-            >
-              Próximamente
-            </span>
-          </button>
+            {userName ? (
+              <span className="max-w-40 truncate">Hola, {userName.split(" ")[0]}</span>
+            ) : (
+              "Iniciar sesión"
+            )}
+          </Link>
 
           {/* Perfil (Preparado para autenticación) */}
 
