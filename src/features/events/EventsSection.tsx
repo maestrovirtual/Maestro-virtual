@@ -1,5 +1,6 @@
 import EventsClient from "./EventsClient";
 import prisma from "@/lib/prisma/client";
+import { getCurrentUser } from "@/lib/auth/dal";
 import type { EventItem } from "@/types/event";
 
 async function fetchEventosReales(): Promise<EventItem[] | undefined> {
@@ -63,8 +64,41 @@ async function fetchEventosReales(): Promise<EventItem[] | undefined> {
   }
 }
 
-export default async function EventsSection() {
-  const eventosAPI = await fetchEventosReales();
+export default async function EventsSection({
+  currentPath = "/events",
+}: {
+  currentPath?: string;
+} = {}) {
+  const [eventosAPI, user] = await Promise.all([
+    fetchEventosReales(),
+    getCurrentUser(),
+  ]);
 
-  return <EventsClient eventosDelBackend={eventosAPI} />;
+  let enrolledEventIds: string[] = [];
+  if (user) {
+    try {
+      const enrollments = await prisma.enrollment.findMany({
+        where: {
+          userId: user.id,
+          eventId: { not: null },
+          status: { not: "CANCELLED" },
+        },
+        select: { eventId: true },
+      });
+      enrolledEventIds = enrollments
+        .map((enrollment) => enrollment.eventId)
+        .filter((id): id is string => Boolean(id));
+    } catch {
+      enrolledEventIds = [];
+    }
+  }
+
+  return (
+    <EventsClient
+      eventosDelBackend={eventosAPI}
+      isLoggedIn={Boolean(user)}
+      enrolledEventIds={enrolledEventIds}
+      currentPath={currentPath}
+    />
+  );
 }

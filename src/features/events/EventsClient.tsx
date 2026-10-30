@@ -22,9 +22,17 @@ const filters: { value: FilterOption; label: string }[] = [
 
 interface EventsSectionProps {
   eventosDelBackend?: EventItem[];
+  isLoggedIn?: boolean;
+  enrolledEventIds?: string[];
+  currentPath?: string;
 }
 
-export default function EventsClient({ eventosDelBackend }: EventsSectionProps) {
+export default function EventsClient({
+  eventosDelBackend,
+  isLoggedIn = false,
+  enrolledEventIds = [],
+  currentPath = '/events',
+}: EventsSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('todos');
 
   // Fallback a mocks SOLO cuando el backend falla o da timeout (undefined).
@@ -129,7 +137,15 @@ export default function EventsClient({ eventosDelBackend }: EventsSectionProps) 
 
             <div className="mx-auto flex max-w-4xl flex-col gap-6 animate-fadeUp [animation-delay:200ms]">
               {filteredEvents.length > 0 ? (
-                filteredEvents.map((event) => <EventCard key={event.id} event={event} />)
+                filteredEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isLoggedIn={isLoggedIn}
+                    isEnrolled={enrolledEventIds.includes(event.id)}
+                    currentPath={currentPath}
+                  />
+                ))
               ) : (
                 <div className="mx-auto flex max-w-md flex-col items-center py-8 text-center">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

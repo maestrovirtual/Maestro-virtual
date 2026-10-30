@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 // 1. Importamos los datos locales únicamente como Plan B (Red de Seguridad)
 import { courses as mockCourses, type Course } from "@/features/courses/data/courses";
+import { getCurrentUser } from "@/lib/auth/dal";
+import prisma from "@/lib/prisma/client";
 
 import CourseHero from "@/features/courses/course-details/CourseHero";
 import CourseStats from "@/features/courses/course-details/CoursesStats";
@@ -43,23 +45,56 @@ async function fetchCourseData(slug: string) {
 export default async function CoursePage({
   params,
 }: CoursePageProps) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
 
-  // 4. Invocamos la función para obtener la data real o el fallback
-  const course = await fetchCourseData(slug);
+  // 4. Invocamos la función para obtener la data real o el fallback y la sesión actual
+  const [course, user] = await Promise.all([
+    fetchCourseData(slug),
+    getCurrentUser(),
+  ]);
 
   if (!course) {
     notFound();
   }
 
+  let isEnrolled = false;
+  if (user) {
+    try {
+      const existingEnrollment = await prisma.enrollment.findFirst({
+        where: {
+          userId: user.id,
+          courseId: course.id,
+          status: { not: "CANCELLED" },
+        },
+        select: { id: true },
+      });
+      isEnrolled = Boolean(existingEnrollment);
+    } catch {
+      isEnrolled = false;
+    }
+  }
+
+  const isLoggedIn = Boolean(user);
+  const currentPath = `/${locale}/courses/${slug}`;
+
   return (
     <main className="min-h-screen bg-background">
-      <CourseHero course={course} />
+      <CourseHero
+        course={course}
+        isEnrolled={isEnrolled}
+        isLoggedIn={isLoggedIn}
+        currentPath={currentPath}
+      />
       <CourseStats course={course} />
       <CourseDescription course={course} />
       <CourseHighlights course={course} />
       <CourseTestimonials course={course} />
-      <CourseCTA course={course} />
+      <CourseCTA
+        course={course}
+        isEnrolled={isEnrolled}
+        isLoggedIn={isLoggedIn}
+        currentPath={currentPath}
+      />
     </main>
   );
 }

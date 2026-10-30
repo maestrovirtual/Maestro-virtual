@@ -52,7 +52,7 @@ test.describe('Tarea 25 y MV-32: Pruebas E2E del panel de administración (Staff
   // Omitidas temporalmente con test.skip() para validar la integración 
   // ------------------------------------------------------------------
 
-  test.skip('Debe crear, cambiar estado a borrador y eliminar un evento', async ({ page }) => {
+  test.skip('Debe crear, cambiar estado a borrador y eliminar un evento', async () => {
   });
 
 });

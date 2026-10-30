@@ -14,9 +14,9 @@ import {
   Video,
 } from 'lucide-react';
 
-import Button from '@/components/ui/Button';
 import { EventItem } from '@/types/event';
 import CourseBackground from '@/features/courses/components/CourseBackground';
+import EnrollButton from '@/features/enrollments/components/EnrollButton';
 
 interface CategoryStyle {
   label: string;
@@ -54,6 +54,9 @@ const monthNames = [
 
 interface EventCardProps {
   event: EventItem;
+  isEnrolled?: boolean;
+  isLoggedIn?: boolean;
+  currentPath?: string;
 }
 
 // Componente local para no modificar el archivo de tu compañero
@@ -87,7 +90,12 @@ function CustomEventBackground({ category, color }: { category?: string; color: 
   return null;
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({
+  event,
+  isEnrolled = false,
+  isLoggedIn = false,
+  currentPath = '/events',
+}: EventCardProps) {
   const safeDateStr = String(event.date || '');
   const dateObj = safeDateStr.includes('T')
     ? new Date(safeDateStr)
@@ -188,11 +196,16 @@ export default function EventCard({ event }: EventCardProps) {
       </div>
 
       <div className="relative flex items-center justify-end sm:items-end mt-4 sm:mt-0">
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Button variant="primary" size="sm" className="rounded-full shadow-lg hover:shadow-xl transition-shadow" style={{ backgroundColor: category.color, borderColor: category.color, color: 'white' }}>
-            Inscribirse
-          </Button>
-        </motion.div>
+        <EnrollButton
+          itemId={event.id}
+          itemType="EVENT"
+          isEnrolled={isEnrolled}
+          isLoggedIn={isLoggedIn}
+          currentPath={currentPath}
+          accentColor={category.color}
+          label="Inscribirse"
+          className="px-5 py-2.5 text-sm"
+        />
       </div>
     </motion.article>
   );
