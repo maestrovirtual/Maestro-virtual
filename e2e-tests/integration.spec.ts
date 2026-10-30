@@ -19,6 +19,7 @@ test.describe('Tarea 28: Pruebas de integración Frontend-Backend', () => {
   test('Debe navegar a la vista de detalle de un curso específico', async ({ page }) => {
     await page.goto('/es/courses');
     await page.waitForLoadState('domcontentloaded');
+    await page.locator('.app-splash-overlay').waitFor({ state: 'hidden', timeout: 15000 });
 
     const firstCourseLink = page.locator('a[href*="/courses/"]').first();
     await expect(firstCourseLink).toBeVisible({ timeout: 15000 });
@@ -51,6 +52,7 @@ test.describe('Tarea 28: Pruebas de integración Frontend-Backend', () => {
 
     await page.goto('/es/contact');
     await page.waitForLoadState('domcontentloaded');
+    await page.locator('.app-splash-overlay').waitFor({ state: 'hidden', timeout: 15000 });
 
     await page.getByLabel('Nombre:', { exact: true }).fill('Usuario Prueba Integración');
     await page.getByLabel('De:', { exact: true }).fill('prueba.integracion@gmail.com');

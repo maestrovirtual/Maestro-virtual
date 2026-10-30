@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import GmailConnection from "./GmailConnection";
 import ContactReplyWorkspace from "./ContactReplyWorkspace";
 import { useLocale } from "next-intl";
-import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Forward, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 
 type ContactMessage = {
   _count?: { replies: number };
@@ -27,6 +27,8 @@ export default function AdminMessagesView() {
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -96,9 +98,55 @@ export default function AdminMessagesView() {
     setError("");
     setNotice("");
     setSelectedId(null);
+    setSelectedForDelete(new Set());
     setPage(1);
     setInbox(null);
     setView(nextView);
+  }
+
+  function toggleSelectForDelete(id: string) {
+    setSelectedForDelete(current => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (inbox?.messages) {
+      if (selectedForDelete.size === inbox.messages.length) {
+        setSelectedForDelete(new Set());
+      } else {
+        setSelectedForDelete(new Set(inbox.messages.map(m => m.id)));
+      }
+    }
+  }
+
+  async function confirmDelete() {
+    if (selectedForDelete.size === 0) return;
+    setPendingId("deleting");
+    setError("");
+    setNotice("");
+    try {
+      const ids = Array.from(selectedForDelete);
+      const responses = await Promise.all(
+        ids.map(id => fetch(`/api/admin/messages/${encodeURIComponent(id)}`, { method: "DELETE" }))
+      );
+      for (const response of responses) {
+        if (!response.ok) throw new Error("No se pudieron eliminar algunos mensajes. Intenta de nuevo.");
+      }
+      setSelectedForDelete(new Set());
+      setShowDeleteConfirm(false);
+      setLoading(true);
+      if (inbox?.messages.length === selectedForDelete.size && page > 1) setPage(page - 1);
+      else await load();
+      setNotice(`${ids.length} ${ids.length === 1 ? "mensaje eliminado" : "mensajes eliminados"} correctamente.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron eliminar los mensajes.");
+    } finally {
+      setPendingId(null);
+    }
   }
 
   async function moveMessage(message: ContactMessage, changes: { isArchived?: boolean; isSpam?: boolean }, confirmation: string) {
@@ -118,6 +166,19 @@ export default function AdminMessagesView() {
       setNotice(confirmation);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo mover el mensaje.");
+    } finally { setPendingId(null); }
+  }
+
+  async function forwardMessage(message: ContactMessage) {
+    setPendingId(message.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/messages/${encodeURIComponent(message.id)}/forward`, { method: "POST" });
+      if (!response.ok) throw new Error("No se pudo reenviar el mensaje. Intenta de nuevo.");
+      setNotice("Mensaje reenviado a Maestro Virtual.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo reenviar el mensaje.");
     } finally { setPendingId(null); }
   }
 
@@ -170,7 +231,13 @@ export default function AdminMessagesView() {
             <h2 className="text-sm font-semibold text-slate-900">{view === "inbox" ? "Bandeja de entrada" : view === "spam" ? "Spam" : "Mensajes archivados"}</h2>
             {inbox && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500">{inbox.total}</span>}
           </div>
-          <span className="flex items-center gap-2 text-xs text-slate-400"><ArrowDownWideNarrow size={14} aria-hidden="true" />Actividad más reciente primero</span>
+          {selectedForDelete.size > 0 ? (
+            <button disabled={pendingId !== null} onClick={() => setShowDeleteConfirm(true)} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600 disabled:opacity-40">
+              <Trash2 size={14} aria-hidden="true" />{selectedForDelete.size} para eliminar
+            </button>
+          ) : (
+            <span className="flex items-center gap-2 text-xs text-slate-400"><ArrowDownWideNarrow size={14} aria-hidden="true" />Actividad más reciente primero</span>
+          )}
         </div>
         {loading ? <div role="status" className="space-y-6 p-7"><span className="sr-only">Cargando mensajes…</span>{[1, 2, 3].map(item => <div key={item} aria-hidden="true" className="flex animate-pulse gap-4 motion-reduce:animate-none"><div className="h-10 w-10 rounded-full bg-slate-100" /><div className="flex-1 space-y-3"><div className="h-3 w-1/3 rounded bg-slate-100" /><div className="h-3 w-2/3 rounded bg-slate-50" /></div></div>)}</div> : inbox && (
           <>
@@ -186,24 +253,37 @@ export default function AdminMessagesView() {
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
+                {inbox.messages.length > 0 && (
+                  <li className="border-l-[3px] border-l-transparent">
+                    <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+                      <input type="checkbox" checked={selectedForDelete.size > 0 && selectedForDelete.size === inbox.messages.length} onChange={toggleSelectAll} disabled={pendingId !== null} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600 disabled:opacity-50 cursor-pointer" aria-label="Seleccionar todos los mensajes" />
+                      <span className="text-xs font-medium text-slate-500">{selectedForDelete.size > 0 ? `${selectedForDelete.size} seleccionado${selectedForDelete.size === 1 ? "" : "s"}` : "Seleccionar todos"}</span>
+                    </div>
+                  </li>
+                )}
                 {inbox.messages.map(message => {
                   const isSelected = selected?.id === message.id;
+                  const isChecked = selectedForDelete.has(message.id);
                   return (
-                    <li key={message.id} className={`border-l-[3px] transition-colors ${!message.isRead ? "border-l-blue-500 bg-blue-50/30" : "border-l-transparent"}`}>
-                      <button className="flex w-full items-start gap-3 px-4 py-5 text-left transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600 sm:gap-4 sm:px-6" disabled={pendingId !== null} aria-expanded={isSelected} aria-controls={`message-${message.id}`} onClick={() => setSelectedId(isSelected ? null : message.id)}>
-                        <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${message.isRead ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-700"}`} aria-hidden="true">{message.name.trim().charAt(0).toUpperCase()}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"><span className="text-sm font-semibold text-slate-800">{message.name}</span><time dateTime={message.lastActivityAt || message.date} className="text-xs font-normal text-slate-400">{formatDate(message.lastActivityAt || message.date)}</time></span>
-                          <span className={`mt-1 block truncate text-sm ${message.isRead ? "text-slate-600" : "font-semibold text-slate-900"}`}>{message.subject || "Sin asunto"}</span>
-                          <span className="mt-1 block truncate text-xs leading-5 text-slate-400">{message.email}</span>
-                          <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><span className={`h-1.5 w-1.5 rounded-full ${message.isRead ? "bg-slate-300" : "bg-blue-500"}`} />{message.isRead ? "Leído" : "No leído"}</span>{!!message._count?.replies && <span className="ml-3 text-[11px] font-medium text-emerald-700">Respondido · {message._count.replies}</span>}
-                        </span>
-                        <ChevronDown size={16} className={`mt-1 shrink-0 text-slate-400 transition-transform ${isSelected ? "rotate-180" : ""}`} aria-hidden="true" />
-                        <span className="sr-only">{isSelected ? "Cerrar mensaje" : "Ver mensaje"}</span>
-                      </button>
+                    <li key={message.id} className={`border-l-[3px] transition-colors ${!message.isRead ? "border-l-blue-500 bg-blue-50/30" : "border-l-transparent"} ${isChecked ? "bg-blue-50" : ""}`}>
+                      <div className="flex items-start gap-3 px-4 py-5 sm:gap-4 sm:px-6">
+                        <input type="checkbox" checked={isChecked} onChange={() => toggleSelectForDelete(message.id)} disabled={pendingId !== null} className="mt-2.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600 disabled:opacity-50 cursor-pointer" aria-label={`Seleccionar mensaje de ${message.name}`} />
+                        <button className="flex flex-1 items-start gap-3 text-left transition hover:bg-slate-50/50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40 rounded-lg -mx-2 px-2 py-1" disabled={pendingId !== null} aria-expanded={isSelected} aria-controls={`message-${message.id}`} onClick={() => setSelectedId(isSelected ? null : message.id)}>
+                          <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${message.isRead ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-700"}`} aria-hidden="true">{message.name.trim().charAt(0).toUpperCase()}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"><span className="text-sm font-semibold text-slate-800">{message.name}</span><time dateTime={message.lastActivityAt || message.date} className="text-xs font-normal text-slate-400">{formatDate(message.lastActivityAt || message.date)}</time></span>
+                            <span className={`mt-1 block truncate text-sm ${message.isRead ? "text-slate-600" : "font-semibold text-slate-900"}`}>{message.subject || "Sin asunto"}</span>
+                            <span className="mt-1 block truncate text-xs leading-5 text-slate-400">{message.email}</span>
+                            <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><span className={`h-1.5 w-1.5 rounded-full ${message.isRead ? "bg-slate-300" : "bg-blue-500"}`} />{message.isRead ? "Leído" : "No leído"}</span>{!!message._count?.replies && <span className="ml-3 text-[11px] font-medium text-emerald-700">Respondido · {message._count.replies}</span>}
+                          </span>
+                          <ChevronDown size={16} className={`mt-1 shrink-0 text-slate-400 transition-transform ${isSelected ? "rotate-180" : ""}`} aria-hidden="true" />
+                          <span className="sr-only">{isSelected ? "Cerrar mensaje" : "Ver mensaje"}</span>
+                        </button>
+                      </div>
                       {isSelected && <div id={`message-${message.id}`} className="mx-4 mb-5 rounded-xl border border-slate-200 bg-white p-5 sm:ml-20 sm:mr-6 sm:p-6"><ContactReplyWorkspace autoOpen={!!message._count?.replies} refreshVersion={mailSyncVersion} message={message} onSent={() => void load()} onBusyChange={busy => setPendingId(busy ? message.id : null)} /></div>}
                       <div className="flex flex-wrap justify-end gap-2 px-5 pb-4 sm:px-7">{view !== "spam" && <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isArchived: !message.isArchived }, message.isArchived ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje archivado. Puedes recuperarlo en Archivados.")}>{view === "archived" ? <ArchiveRestore size={14} aria-hidden="true" /> : <Archive size={14} aria-hidden="true" />}{view === "archived" ? "Devolver a la bandeja" : "Archivar"}</button>}
-                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button></div>
+                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button>
+                      <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void forwardMessage(message)}><Forward size={14} aria-hidden="true" />Reenviar a Maestro Virtual</button></div>
                     </li>
                   );
                 })}
@@ -217,6 +297,29 @@ export default function AdminMessagesView() {
         )}
       </div>
       <p className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400"><CheckCheck size={14} aria-hidden="true" />Solo el staff puede consultar esta bandeja.</p>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="px-6 py-6 border-b border-slate-100">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+                  <Trash2 size={20} aria-hidden="true" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Eliminar mensajes</h3>
+              </div>
+              <p className="text-sm text-slate-600">¿Estás seguro que deseas eliminar {selectedForDelete.size} {selectedForDelete.size === 1 ? "mensaje" : "mensajes"}? Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={pendingId !== null} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40">
+                Cancelar
+              </button>
+              <button onClick={() => void confirmDelete()} disabled={pendingId !== null} className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-red-600 disabled:opacity-40">
+                {pendingId === "deleting" ? "Eliminando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
