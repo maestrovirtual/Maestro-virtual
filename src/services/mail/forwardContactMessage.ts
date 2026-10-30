@@ -64,9 +64,13 @@ function buildHtml(message: ForwardableMessage): string {
 export async function forwardContactMessage(id: string, message: ForwardableMessage) {
   const to = forwardTargetEmail();
   if (!to) throw new Error("Configura FORWARD_TO_EMAIL o CONTACT_EMAIL para reenviar mensajes");
+  const from = process.env.MAIL_FROM_NOTIFICATIONS?.trim() || process.env.MAIL_FROM?.trim() || "onboarding@resend.dev";
+  if (!from || from === "onboarding@resend.dev") {
+    throw new Error("Configura MAIL_FROM_NOTIFICATIONS para reenviar mensajes a TI");
+  }
   return await getResend().emails.send(
     {
-      from: process.env.MAIL_FROM?.trim() || "onboarding@resend.dev",
+      from,
       to,
       replyTo: message.email,
       subject: `[Maestro Virtual] Reenviado: ${message.subject}`,
