@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowRight, Menu, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  User,
+} from "lucide-react";
+import NextLink from "next/link";
+import { useParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 import clsx from "clsx";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
 import { replayAppSplash } from "@/components/ui/AppSplash";
 import { triggerContactReveal } from "@/components/ui/ContactRevealOverlay";
+import { logoutAction } from "@/features/account/actions/account.actions";
+import type { CurrentUser } from "@/lib/auth/user";
 
 // "Contacto" se movió al CTA principal (botón azul con circle-reveal).
 // Preparando también para restringir "Cursos" a usuarios autenticados.
@@ -18,10 +30,50 @@ const navLinks = [
   { label: "Eventos", href: "/events" },
 ];
 
-// userName: nombre del usuario con sesion iniciada, o null (MV-36).
-export default function Navbar({ userName = null }: { userName?: string | null }) {
+export type NavbarProps = {
+  session?: CurrentUser | null;
+  userName?: string | null;
+};
 
+function useSafeParams(): Record<string, string | string[] | undefined> | null {
+  try {
+    return useParams();
+  } catch {
+    return null;
+  }
+}
+
+function resolveLocale(paramLocale: string | string[] | undefined): string {
+  const candidate = Array.isArray(paramLocale) ? paramLocale[0] : paramLocale;
+  if (
+    candidate &&
+    (routing.locales as readonly string[]).includes(candidate.toLowerCase())
+  ) {
+    return candidate.toLowerCase();
+  }
+  return routing.defaultLocale;
+}
+
+// session / userName: datos del usuario con sesion iniciada, o null (MV-36 / MV-39).
+export default function Navbar({
+  session = null,
+  userName = null,
+}: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const params = useSafeParams();
+  const locale = resolveLocale(params?.locale);
+
+  const activeUser =
+    session ??
+    (userName
+      ? {
+          id: "",
+          name: userName,
+          email: "",
+        }
+      : null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,6 +86,33 @@ export default function Navbar({ userName = null }: { userName?: string | null }
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   return (
     <header
@@ -97,33 +176,33 @@ export default function Navbar({ userName = null }: { userName?: string | null }
             `
         )}
       >
-            {/* Logo */}
+        {/* Logo */}
 
-    <Link
-      href="/"
-      onClick={() => replayAppSplash()}
-      data-skip-transition-flash="true"
-      className="
-      group
-      flex
-      items-center
-      "
-    >
-      <Image
-        src="/images/logo/maestrovirtual.webp"
-        alt="Maestro Virtual"
-        width={144}
-        height={44}
-        priority
-        style={{ width: "144px", height: "auto" }}
-        className="
-        object-contain
-        transition-transform
-        duration-300
-        group-hover:scale-105
-        "
-      />
-    </Link>
+        <Link
+          href="/"
+          onClick={() => replayAppSplash()}
+          data-skip-transition-flash="true"
+          className="
+          group
+          flex
+          items-center
+          "
+        >
+          <Image
+            src="/images/logo/maestrovirtual.webp"
+            alt="Maestro Virtual"
+            width={144}
+            height={44}
+            priority
+            style={{ width: "144px", height: "auto" }}
+            className="
+            object-contain
+            transition-transform
+            duration-300
+            group-hover:scale-105
+            "
+          />
+        </Link>
 
         {/* Links — posicionamiento absoluto para quedar centrados
             en el viewport (no en el espacio sobrante entre logo
@@ -163,9 +242,7 @@ export default function Navbar({ userName = null }: { userName?: string | null }
 
                 hover:text-primary
                 `,
-                scrolled
-                  ? "text-text-primary"
-                  : "text-text-secondary"
+                scrolled ? "text-text-primary" : "text-text-secondary"
               )}
             >
               {link.label}
@@ -197,190 +274,171 @@ export default function Navbar({ userName = null }: { userName?: string | null }
         {/* Right */}
 
         <div className="flex items-center gap-3">
+          {activeUser ? (
+            /* Menú Desplegable de Perfil (MV-39) */
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label="Menú de perfil"
+                className={clsx(
+                  `
+                  group
+                  relative
+                  inline-flex
+                  items-center
+                  gap-2.5
+                  h-10
+                  pl-1.5
+                  pr-2.5
+                  md:pr-3.5
+                  rounded-full
+                  border
+                  text-[14px]
+                  font-medium
+                  backdrop-blur-xl
+                  transition-all
+                  duration-300
+                  cursor-pointer
+                  hover:-translate-y-0.5
+                  hover:shadow-md
+                  `,
+                  scrolled
+                    ? `
+                      bg-white/10
+                      border-white/15
+                      text-text-primary
+                      hover:bg-white/20
+                      hover:border-primary/30
+                    `
+                    : `
+                      bg-white/45
+                      border-white/35
+                      text-text-primary
+                      hover:bg-white/70
+                      hover:border-primary/40
+                    `
+                )}
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary transition-transform duration-300 group-hover:scale-105">
+                  <User className="h-4 w-4" aria-hidden="true" />
+                </span>
 
-          {/* Iniciar sesión — pastilla ghost que espeja el lenguaje
-              visual del círculo de perfil (misma altura, mismo glass).
-              Lleva al login de usuarios; con sesion muestra el nombre y
-              /login enseña la cuenta y "Cerrar sesión" (MV-36). */}
-          <Link
-            href="/login"
-            title={userName ? "Mi cuenta" : undefined}
-            className={clsx(
-              `
-              group
+                <span className="hidden max-w-36 truncate md:inline">
+                  Hola, {activeUser.name.split(" ")[0]}
+                </span>
 
-              relative
+                <ChevronDown
+                  className={clsx(
+                    "h-4 w-4 text-text-secondary transition-transform duration-200",
+                    menuOpen && "rotate-180 text-primary"
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
 
-              hidden
-              md:inline-flex
+              {menuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Opciones de cuenta"
+                  className="absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-2xl border border-border bg-surface/95 p-2 shadow-xl backdrop-blur-2xl"
+                >
+                  <div className="border-b border-border/80 px-3 py-2.5 mb-1">
+                    <p className="truncate text-sm font-semibold text-text-primary">
+                      {activeUser.name}
+                    </p>
+                    {activeUser.email && (
+                      <p className="truncate text-xs text-text-secondary">
+                        {activeUser.email}
+                      </p>
+                    )}
+                  </div>
 
-              items-center
+                  <NextLink
+                    href={`/${locale}/dashboard`}
+                    role="menuitem"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <LayoutDashboard
+                      className="h-4 w-4 text-primary shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span>Mi Dashboard</span>
+                  </NextLink>
 
-              h-10
-              px-4
-
-              rounded-full
-
-              border
-
-              text-[14px]
-              font-medium
-
-              backdrop-blur-xl
-
-              transition-all
-              duration-300
-
-              hover:-translate-y-0.5
-              hover:shadow-md
-              `,
-              scrolled
-                ? `
-                  bg-white/10
-                  border-white/15
-                  text-text-primary
-                  hover:bg-white/20
-                  hover:border-primary/30
+                  <form action={logoutAction} className="mt-0.5 w-full">
+                    <input type="hidden" name="locale" value={locale} />
+                    <button
+                      type="submit"
+                      role="menuitem"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                    >
+                      <LogOut
+                        className="h-4 w-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>Cerrar Sesión</span>
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Iniciar sesión — pastilla ghost para visitantes sin sesión (MV-36). */
+            <Link
+              href="/login"
+              className={clsx(
                 `
-                : `
-                  bg-white/40
-                  border-white/35
-                  text-text-primary
-                  hover:bg-white/70
-                  hover:border-primary/40
-                `
-            )}
-          >
-            {userName ? (
-              <span className="max-w-40 truncate">Hola, {userName.split(" ")[0]}</span>
-            ) : (
-              "Iniciar sesión"
-            )}
-          </Link>
+                group
 
-          {/* Perfil (Preparado para autenticación) */}
+                relative
 
-          <button
-            className={clsx(
-              `
-              group
+                hidden
+                md:inline-flex
 
-              relative
+                items-center
 
-              hidden
-              md:flex
+                h-10
+                px-4
 
-              h-10
-              w-10
+                rounded-full
 
-              items-center
-              justify-center
+                border
 
-              rounded-full
+                text-[14px]
+                font-medium
 
-              border
+                backdrop-blur-xl
 
-              backdrop-blur-xl
+                transition-all
+                duration-300
 
-              transition-all
-              duration-300
-
-              hover:-translate-y-0.5
-              hover:scale-105
-              `,
-              scrolled
-                ? `
-                  bg-white/10
-                  border-white/10
-                  hover:bg-white/20
-                `
-                : `
-                  bg-white/45
-                  border-white/35
-                  hover:bg-white/70
-                `
-            )}
-          >
-           
-
-            {/* Glow */}
-
-            <span
-              className="
-              absolute
-              inset-0
-
-              rounded-full
-
-              bg-gradient-to-br
-              from-primary/10
-              to-brand-red/10
-
-              opacity-0
-
-              transition-opacity
-              duration-300
-
-              group-hover:opacity-100
-              "
-            />
-
-            <User
-              className="
-              relative
-
-              h-5
-              w-5
-
-              text-text-primary
-
-              transition-transform
-              duration-300
-
-              group-hover:scale-110
-              "
-            />
-
-            {/* Tooltip */}
-
-            <span
-              className="
-              pointer-events-none
-
-              absolute
-              top-[calc(100%+12px)]
-              left-1/2
-
-              -translate-x-1/2
-              translate-y-1
-
-              whitespace-nowrap
-
-              rounded-full
-
-              bg-text-primary
-
-              px-3
-              py-1.5
-
-              text-[11px]
-              font-medium
-              text-white
-
-              opacity-0
-
-              shadow-xl
-
-              transition-all
-              duration-300
-
-              group-hover:translate-y-0
-              group-hover:opacity-100
-              "
+                hover:-translate-y-0.5
+                hover:shadow-md
+                `,
+                scrolled
+                  ? `
+                    bg-white/10
+                    border-white/15
+                    text-text-primary
+                    hover:bg-white/20
+                    hover:border-primary/30
+                  `
+                  : `
+                    bg-white/40
+                    border-white/35
+                    text-text-primary
+                    hover:bg-white/70
+                    hover:border-primary/40
+                  `
+              )}
             >
-              Próximamente
-            </span>
-          </button>
+              Iniciar sesión
+            </Link>
+          )}
 
           {/* CTA principal: Contacto con circle-reveal.
               (Antes "Explorar cursos" — se movió porque próximamente el
@@ -464,7 +522,6 @@ export default function Navbar({ userName = null }: { userName?: string | null }
           >
             <Menu className="h-5 w-5 text-text-primary" />
           </button>
-
         </div>
       </Container>
     </header>
