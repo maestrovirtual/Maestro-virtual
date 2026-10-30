@@ -4,7 +4,16 @@ import type { AdminEvent } from "@/features/admin/types/event.types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminEventsRoute() {
+type AdminEventsRouteProps = {
+  params?: Promise<{ locale: string }>;
+};
+
+export default async function AdminEventsRoute({
+  params,
+}: AdminEventsRouteProps = {}) {
+  const resolvedParams = params ? await params : undefined;
+  const locale = resolvedParams?.locale ?? "es";
+
   let initialEvents: AdminEvent[] = [];
   try {
     initialEvents = await getAdminEvents();
@@ -12,5 +21,5 @@ export default async function AdminEventsRoute() {
     initialEvents = [];
   }
 
-  return <AdminEventsPage initialEvents={initialEvents} />;
+  return <AdminEventsPage initialEvents={initialEvents} locale={locale} />;
 }
