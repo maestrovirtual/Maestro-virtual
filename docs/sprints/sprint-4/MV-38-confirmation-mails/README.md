@@ -272,9 +272,36 @@ En la terminal donde corre `npm run dev`:
 
 ---
 
-## 9. Contacto & Preguntas
+## 9. Funcionalidad de Eliminar Mensajes (Bonus)
+
+Además del MV-38 original, se agregó capacidad para eliminar mensajes en el Admin Panel:
+
+### 9.1. Características
+- **Selección múltiple:** Checkboxes para seleccionar mensajes individuales o "Seleccionar todo"
+- **Botón de eliminar:** Muestra contador de mensajes seleccionados
+- **Modal de confirmación:** Pregunta si estás seguro antes de eliminar, muestra cantidad
+- **Eliminación en cascada:** Elimina automáticamente las respuestas asociadas antes del mensaje
+
+### 9.2. Archivos modificados
+| Archivo | Cambio |
+|---------|--------|
+| `src/features/admin/components/AdminMessagesView.tsx` | Agregar UI de selección y modal de confirmación |
+| `src/app/api/admin/messages/[id]/route.ts` | Agregar método DELETE con transacción |
+
+### 9.3. Cómo funciona
+1. El usuario selecciona mensajes con checkboxes
+2. Aparece botón rojo "para eliminar" con contador en header
+3. Al hacer clic, se abre modal de confirmación
+4. Si confirma, se envían DELETE requests para cada mensaje
+5. Primero se eliminan las ContactReply (respuestas), luego ContactMessage
+6. Se muestra mensaje de éxito después de eliminar
+
+---
+
+## 10. Contacto & Preguntas
 
 Si necesitas hacer cambios o tienes dudas:
 - La lógica principal está en `src/features/enrollments/actions/enrollment.actions.ts`
 - Las variables se configuran en `.env` (no commitear `.env` real, solo `.env.example`)
 - Si falla un envío, revisa los logs de Resend en el dashboard web
+- Para eliminar mensajes, revisa `src/features/admin/components/AdminMessagesView.tsx` y `src/app/api/admin/messages/[id]/route.ts`
