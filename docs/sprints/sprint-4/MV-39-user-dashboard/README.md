@@ -1,6 +1,6 @@
 # MV-39: Dashboard de usuario y Menú de perfil
 
-**Responsable:** Juan Pablo Arce Jáuregui (Frontend)
+**Responsable:** Juan Pablo Arce Jauregui (Frontend)
 **Sprint:** 4
 **Épica:** Inscripción a cursos y eventos
 **Story Points:** 5
