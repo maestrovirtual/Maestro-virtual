@@ -1,2 +1,4 @@
-export { default, dynamic } from "../../eventos/[id]/page";
+export const dynamic = "force-dynamic";
+
+export { default } from "../../eventos/[id]/page";
 
