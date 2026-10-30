@@ -12,9 +12,13 @@ import type { AdminCourse } from "../types/course.types";
 
 interface AdminCoursesPageProps {
   initialCourses?: AdminCourse[];
+  locale?: string;
 }
 
-export default function AdminCoursesPage({ initialCourses = [] }: AdminCoursesPageProps) {
+export default function AdminCoursesPage({
+  initialCourses = [],
+  locale = "es",
+}: AdminCoursesPageProps) {
   const router = useRouter();
   const [courses, setCourses] = useState<AdminCourse[]>(initialCourses);
   const [loading, setLoading] = useState(false);
@@ -130,6 +134,7 @@ export default function AdminCoursesPage({ initialCourses = [] }: AdminCoursesPa
                 course={course}
                 onEdit={() => handleOpenEdit(course)}
                 onDelete={() => handleOpenDelete(course)}
+                detailsHref={`/${locale}/admin/cursos/${course.id}`}
               />
             ))}
           </div>

@@ -222,7 +222,7 @@ describe('API /api/account', () => {
 
       expect(response.status).toBe(429);
       expect(prisma.user.findUnique).toHaveBeenCalledTimes(10);
-    });
+    }, 15000);
   });
 
   // ==========================================

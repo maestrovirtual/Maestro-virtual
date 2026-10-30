@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Calendar, Clock3, Edit2, MapPin, Trash2, Video } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Clock3, Edit2, MapPin, Trash2, Users, Video } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import type { AdminEvent } from "../types/event.types";
@@ -10,6 +11,7 @@ interface AdminEventCardProps {
   event: AdminEvent;
   onEdit: () => void;
   onDelete: () => void;
+  detailsHref?: string;
 }
 
 function formatDate(dateInput: string | Date): string {
@@ -30,7 +32,9 @@ export default function AdminEventCard({
   event,
   onEdit,
   onDelete,
+  detailsHref,
 }: AdminEventCardProps) {
+  const resolvedDetailsHref = detailsHref ?? `/es/admin/eventos/${event.id}`;
   const isImageValid = Boolean(event.image && event.image.trim() !== "");
   const isOnline =
     String(event.modality).toUpperCase() === "ONLINE" ||
@@ -123,27 +127,38 @@ export default function AdminEventCard({
         </div>
 
         {/* ACCIONES DEL ADMIN */}
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            className="flex-1 gap-1.5"
-            aria-label={`Editar ${event.title}`}
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
+          <Link
+            href={resolvedDetailsHref}
+            aria-label={`Ver inscritos de ${event.title}`}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold text-text-primary shadow-sm transition-colors hover:bg-background"
           >
-            <Edit2 size={15} />
-            <span>Editar</span>
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={onDelete}
-            className="flex-1 gap-1.5"
-            aria-label={`Eliminar ${event.title}`}
-          >
-            <Trash2 size={15} />
-            <span>Eliminar</span>
-          </Button>
+            <Users size={15} className="text-primary" />
+            <span>Detalle e inscritos</span>
+          </Link>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex-1 gap-1.5"
+              aria-label={`Editar ${event.title}`}
+            >
+              <Edit2 size={15} />
+              <span>Editar</span>
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={onDelete}
+              className="flex-1 gap-1.5"
+              aria-label={`Eliminar ${event.title}`}
+            >
+              <Trash2 size={15} />
+              <span>Eliminar</span>
+            </Button>
+          </div>
         </div>
       </div>
     </Card>
