@@ -70,11 +70,10 @@ export default function AppSplash() {
     return () => window.removeEventListener(REPLAY_EVENT, handleReplay);
   }, []);
 
-  function continueIntoSite(event: React.MouseEvent<HTMLButtonElement>) {
+  function continueIntoSite(event: React.MouseEvent<HTMLButtonElement | HTMLDivElement>) {
     if (ripple) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX || rect.left + rect.width / 2;
-    const y = event.clientY || rect.top + rect.height / 2;
+    const x = event.clientX;
+    const y = event.clientY;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const farthestCorner = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y));
@@ -89,11 +88,12 @@ export default function AppSplash() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="app-splash-overlay fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+          className="app-splash-overlay fixed inset-0 z-[100] flex items-center justify-center overflow-hidden cursor-pointer"
           style={{
             background:
               'linear-gradient(135deg, #2563EA 0%, #1E40AF 40%, #10B982 100%)',
           }}
+          onClick={(e) => showCta && continueIntoSite(e)}
         >
           {/* Halo de luz sutil detrás del logo, para dar profundidad */}
           <motion.div
