@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
@@ -7,12 +6,14 @@ import { enrollUserAction } from "@/features/enrollments/actions/enrollment.acti
 
 const mockPush = jest.fn();
 const mockRefresh = jest.fn();
+const mockUseParams = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
     refresh: mockRefresh,
   }),
+  useParams: () => mockUseParams(),
 }));
 
 jest.mock("@/features/enrollments/actions/enrollment.actions", () => ({
@@ -26,6 +27,7 @@ const mockedEnrollUserAction = enrollUserAction as jest.MockedFunction<
 describe("EnrollButton (MV-37)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseParams.mockReturnValue({ locale: "es" });
   });
 
   it("renderiza el estado Inscrito (deshabilitado con el texto 'Ya estás inscrito')", () => {
@@ -44,14 +46,16 @@ describe("EnrollButton (MV-37)", () => {
     expect(button).toBeDisabled();
   });
 
-  it("renderiza el estado No Logueado y redirige a /login?next=${currentPath} al hacer clic", () => {
+  it("renderiza el estado No Logueado y redirige a /${locale}/login?next=${currentPath} evitando error 404", () => {
+    mockUseParams.mockReturnValue({ locale: "en" });
+
     render(
       <EnrollButton
         itemId="course-zoom-1"
         itemType="COURSE"
         isEnrolled={false}
         isLoggedIn={false}
-        currentPath="/es/courses/zoom"
+        currentPath="/en/courses/zoom"
       />
     );
 
@@ -61,11 +65,35 @@ describe("EnrollButton (MV-37)", () => {
 
     fireEvent.click(button);
 
-    expect(mockPush).toHaveBeenCalledWith("/login?next=/es/courses/zoom");
+    expect(mockPush).toHaveBeenCalledWith("/en/login?next=/en/courses/zoom");
     expect(mockedEnrollUserAction).not.toHaveBeenCalled();
   });
 
-  it("renderiza el estado Activo (logueado y no inscrito) y ejecuta enrollUserAction al hacer clic", async () => {
+  it("permite abrir el modal de formulario y cerrarlo con el botón Cancelar sin inscribir", () => {
+    render(
+      <EnrollButton
+        itemId="course-zoom-1"
+        itemType="COURSE"
+        isEnrolled={false}
+        isLoggedIn={true}
+        currentPath="/es/courses/zoom"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /inscribirme/i }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(/¿estás seguro que deseas inscribirte a este curso\?/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mockedEnrollUserAction).not.toHaveBeenCalled();
+  });
+
+  it("abre el modal con el formulario de confirmación, ejecuta enrollUserAction al confirmar y cambia el botón a 'Ya estás inscrito'", async () => {
     mockedEnrollUserAction.mockResolvedValueOnce({
       success: true,
       enrollmentId: "enr-123",
@@ -82,21 +110,28 @@ describe("EnrollButton (MV-37)", () => {
       />
     );
 
-    const button = screen.getByRole("button", { name: /inscribirme/i });
-    expect(button).toBeInTheDocument();
-    expect(button).not.toBeDisabled();
+    const triggerButton = screen.getByRole("button", { name: /inscribirme/i });
+    fireEvent.click(triggerButton);
 
-    fireEvent.click(button);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", {
+      name: /confirmar inscripción/i,
+    });
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockedEnrollUserAction).toHaveBeenCalledWith(
-        "course-zoom-1",
-        "COURSE",
-        "/es/courses/zoom"
-      );
+      expect(mockedEnrollUserAction).toHaveBeenCalledTimes(1);
     });
 
+    const passedFormData = mockedEnrollUserAction.mock.calls[0][0] as FormData;
+    expect(passedFormData).toBeInstanceOf(FormData);
+    expect(passedFormData.get("itemId")).toBe("course-zoom-1");
+    expect(passedFormData.get("itemType")).toBe("COURSE");
+    expect(passedFormData.get("currentPath")).toBe("/es/courses/zoom");
+
     await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /ya estás inscrito/i })
       ).toBeDisabled();
@@ -107,4 +142,3 @@ describe("EnrollButton (MV-37)", () => {
     );
   });
 });
-

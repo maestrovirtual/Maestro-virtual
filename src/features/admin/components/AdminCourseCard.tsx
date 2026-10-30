@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Clock3, Edit2, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Clock3, Edit2, Trash2, Users } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import type { AdminCourse } from "../types/course.types";
@@ -10,13 +11,16 @@ interface AdminCourseCardProps {
   course: AdminCourse;
   onEdit: () => void;
   onDelete: () => void;
+  detailsHref?: string;
 }
 
 export default function AdminCourseCard({
   course,
   onEdit,
   onDelete,
+  detailsHref,
 }: AdminCourseCardProps) {
+  const resolvedDetailsHref = detailsHref ?? `/es/admin/cursos/${course.id}`;
   const isImageValid = course.image && course.image.trim() !== "";
 
   return (
@@ -88,27 +92,38 @@ export default function AdminCourseCard({
         </div>
 
         {/* ACCIONES DEL ADMIN */}
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            className="flex-1 gap-1.5"
-            aria-label={`Editar ${course.title}`}
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
+          <Link
+            href={resolvedDetailsHref}
+            aria-label={`Ver inscritos de ${course.title}`}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-semibold text-text-primary shadow-sm transition-colors hover:bg-background"
           >
-            <Edit2 size={15} />
-            <span>Editar</span>
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={onDelete}
-            className="flex-1 gap-1.5"
-            aria-label={`Eliminar ${course.title}`}
-          >
-            <Trash2 size={15} />
-            <span>Eliminar</span>
-          </Button>
+            <Users size={15} className="text-primary" />
+            <span>Detalle e inscritos</span>
+          </Link>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex-1 gap-1.5"
+              aria-label={`Editar ${course.title}`}
+            >
+              <Edit2 size={15} />
+              <span>Editar</span>
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={onDelete}
+              className="flex-1 gap-1.5"
+              aria-label={`Eliminar ${course.title}`}
+            >
+              <Trash2 size={15} />
+              <span>Eliminar</span>
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

@@ -4,7 +4,16 @@ import type { AdminCourse } from "@/features/admin/types/course.types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCoursesRoute() {
+type AdminCoursesRouteProps = {
+  params?: Promise<{ locale: string }>;
+};
+
+export default async function AdminCoursesRoute({
+  params,
+}: AdminCoursesRouteProps = {}) {
+  const resolvedParams = params ? await params : undefined;
+  const locale = resolvedParams?.locale ?? "es";
+
   let initialCourses: AdminCourse[] = [];
   try {
     initialCourses = await getAdminCourses();
@@ -12,5 +21,5 @@ export default async function AdminCoursesRoute() {
     initialCourses = [];
   }
 
-  return <AdminCoursesPage initialCourses={initialCourses} />;
+  return <AdminCoursesPage initialCourses={initialCourses} locale={locale} />;
 }

@@ -11,6 +11,7 @@ import type { AdminCourse, CourseFormData } from "../types/course.types";
 
 interface CourseFormProps {
   courseToEdit?: AdminCourse | null;
+  locale?: string;
 }
 
 function slugify(text: string): string {
@@ -22,7 +23,7 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export default function CourseForm({ courseToEdit }: CourseFormProps) {
+export default function CourseForm({ courseToEdit, locale = "es" }: CourseFormProps) {
   const router = useRouter();
   const isEditing = Boolean(courseToEdit);
 
@@ -141,7 +142,7 @@ export default function CourseForm({ courseToEdit }: CourseFormProps) {
         }
       }
 
-      router.push("/admin/cursos");
+      router.push(`/${locale}/admin/cursos`);
       router.refresh();
     } catch {
       setError("Error inesperado al procesar la solicitud.");
@@ -154,7 +155,7 @@ export default function CourseForm({ courseToEdit }: CourseFormProps) {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            href="/admin/cursos"
+            href={`/${locale}/admin/cursos`}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-text-secondary hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors border border-border"
           >
             <ArrowLeft size={20} />

@@ -12,9 +12,13 @@ import type { AdminEvent } from "../types/event.types";
 
 interface AdminEventsPageProps {
   initialEvents?: AdminEvent[];
+  locale?: string;
 }
 
-export default function AdminEventsPage({ initialEvents = [] }: AdminEventsPageProps) {
+export default function AdminEventsPage({
+  initialEvents = [],
+  locale = "es",
+}: AdminEventsPageProps) {
   const router = useRouter();
   const [events, setEvents] = useState<AdminEvent[]>(initialEvents);
   const [loading, setLoading] = useState(false);
@@ -130,6 +134,7 @@ export default function AdminEventsPage({ initialEvents = [] }: AdminEventsPageP
                 event={event}
                 onEdit={() => handleOpenEdit(event)}
                 onDelete={() => handleOpenDelete(event)}
+                detailsHref={`/${locale}/admin/eventos/${event.id}`}
               />
             ))}
           </div>
