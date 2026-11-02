@@ -14,9 +14,9 @@ import {
   Video,
 } from 'lucide-react';
 
-import Button from '@/components/ui/Button';
 import { EventItem } from '@/types/event';
 import CourseBackground from '@/features/courses/components/CourseBackground';
+import EnrollButton from '@/features/enrollments/components/EnrollButton';
 
 interface CategoryStyle {
   label: string;
@@ -26,7 +26,18 @@ interface CategoryStyle {
   pattern?: "grid" | "waves" | "shapes" | "cards" | "slides";
 }
 
-const categoryStyles: Record<EventItem['category'], CategoryStyle> = {
+const defaultCategoryStyle: CategoryStyle = {
+  label: 'General',
+  color: '#2563EB',
+  bg: '#2563EB14',
+  Icon: Calendar,
+  pattern: "grid",
+};
+
+const categoryStyles: Record<string, CategoryStyle> = {
+  general: defaultCategoryStyle,
+  tecnologia: { label: 'Tecnología', color: '#0284C7', bg: '#0284C714', Icon: Presentation, pattern: "grid" },
+  educacion: { label: 'Educación', color: '#7C3AED', bg: '#7C3AED14', Icon: GraduationCap, pattern: "cards" },
   zoom: { label: 'Zoom', color: '#185ABD', bg: '#185ABD14', Icon: Video, pattern: "waves" },
   excel: { label: 'Excel', color: '#00BF63', bg: '#00BF6314', Icon: Table, pattern: "grid" },
   powerpoint: { label: 'PowerPoint', color: '#F97316', bg: '#F9731614', Icon: Presentation, pattern: "slides" },
@@ -43,10 +54,13 @@ const monthNames = [
 
 interface EventCardProps {
   event: EventItem;
+  isEnrolled?: boolean;
+  isLoggedIn?: boolean;
+  currentPath?: string;
 }
 
 // Componente local para no modificar el archivo de tu compañero
-function CustomEventBackground({ category, color }: { category: string, color: string }) {
+function CustomEventBackground({ category, color }: { category?: string; color: string }) {
   if (category === 'emprendimiento') {
     return (
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -76,12 +90,29 @@ function CustomEventBackground({ category, color }: { category: string, color: s
   return null;
 }
 
-export default function EventCard({ event }: EventCardProps) {
-  const dateObj = new Date(`${event.date}T00:00:00`);
-  const day = dateObj.getDate();
-  const month = monthNames[dateObj.getMonth()];
-  const category = categoryStyles[event.category];
-  const CategoryIcon = category.Icon;
+export default function EventCard({
+  event,
+  isEnrolled = false,
+  isLoggedIn = false,
+  currentPath = '/events',
+}: EventCardProps) {
+  const safeDateStr = String(event.date || '');
+  const dateObj = safeDateStr.includes('T')
+    ? new Date(safeDateStr)
+    : new Date(`${safeDateStr}T00:00:00`);
+
+  const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+  const day = validDate.getDate();
+  const month = monthNames[validDate.getMonth()] || 'ENE';
+
+  const rawCategoryKey = String(event.category || 'general').toLowerCase().trim();
+  const matchedCategory = categoryStyles[rawCategoryKey];
+  const category = matchedCategory ?? {
+    ...defaultCategoryStyle,
+    label: event.category ? (event.category.charAt(0).toUpperCase() + event.category.slice(1)) : 'General',
+  };
+  const CategoryIcon = category.Icon ?? Calendar;
+  const isOnline = String(event.modality).toLowerCase() === 'online';
 
   return (
     <motion.article
@@ -94,7 +125,7 @@ export default function EventCard({ event }: EventCardProps) {
       {category.pattern ? (
         <CourseBackground pattern={category.pattern} color={category.color} />
       ) : (
-        <CustomEventBackground category={event.category} color={category.color} />
+        <CustomEventBackground category={rawCategoryKey} color={category.color} />
       )}
 
       <div
@@ -119,8 +150,8 @@ export default function EventCard({ event }: EventCardProps) {
           <span
             className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold shadow-sm text-text-secondary"
           >
-            {event.modality === 'online' ? <Video className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
-            {event.modality === 'online' ? 'En línea' : 'Presencial'}
+            {isOnline ? <Video className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+            {isOnline ? 'En línea' : 'Presencial'}
           </span>
         </div>
 
@@ -128,44 +159,53 @@ export default function EventCard({ event }: EventCardProps) {
           {event.title}
         </h3>
 
-        <p className="text-sm leading-6 text-muted-foreground">{event.objective}</p>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {event.objective || (event as unknown as { description?: string }).description || 'Próximamente más información sobre este evento.'}
+        </p>
 
         <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Clock className="h-4 w-4" />
-            {event.time} · {event.duration}
+            {event.time || 'Por definir'}{event.duration ? ` · ${event.duration}` : ''}
           </span>
 
-          {event.modality === 'presencial' ? (
+          {!isOnline ? (
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />
-              {event.location} — {event.address}
+              {event.location ? `${event.location}${event.address ? ` — ${event.address}` : ''}` : (event.address || 'Presencial')}
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
               <Video className="h-4 w-4" />
-              Vía {event.platform}
+              Vía {event.platform || 'En línea'}
+            </span>
+          )}
+
+          {event.participants && (
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              {event.participants}
             </span>
           )}
 
           <span className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            {event.participants}
-          </span>
-
-          <span className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
-            {dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {validDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
           </span>
         </div>
       </div>
 
       <div className="relative flex items-center justify-end sm:items-end mt-4 sm:mt-0">
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Button variant="primary" size="sm" className="rounded-full shadow-lg hover:shadow-xl transition-shadow" style={{ backgroundColor: category.color, borderColor: category.color, color: 'white' }}>
-            Inscribirse
-          </Button>
-        </motion.div>
+        <EnrollButton
+          itemId={event.id}
+          itemType="EVENT"
+          isEnrolled={isEnrolled}
+          isLoggedIn={isLoggedIn}
+          currentPath={currentPath}
+          accentColor={category.color}
+          label="Inscribirse"
+          className="px-5 py-2.5 text-sm"
+        />
       </div>
     </motion.article>
   );

@@ -22,9 +22,17 @@ const filters: { value: FilterOption; label: string }[] = [
 
 interface EventsSectionProps {
   eventosDelBackend?: EventItem[];
+  isLoggedIn?: boolean;
+  enrolledEventIds?: string[];
+  currentPath?: string;
 }
 
-export default function EventsClient({ eventosDelBackend }: EventsSectionProps) {
+export default function EventsClient({
+  eventosDelBackend,
+  isLoggedIn = false,
+  enrolledEventIds = [],
+  currentPath = '/events',
+}: EventsSectionProps) {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('todos');
 
   // Fallback a mocks SOLO cuando el backend falla o da timeout (undefined).
@@ -32,19 +40,33 @@ export default function EventsClient({ eventosDelBackend }: EventsSectionProps) 
   const safeEvents = useMemo(() => eventosDelBackend ?? mockEvents, [eventosDelBackend]);
 
   const sortedEvents = useMemo(
-    () => [...safeEvents].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    () =>
+      [...safeEvents].sort((a, b) => {
+        const dateA = new Date(String(a.date).includes('T') ? a.date : `${a.date}T00:00:00`).getTime();
+        const dateB = new Date(String(b.date).includes('T') ? b.date : `${b.date}T00:00:00`).getTime();
+        return dateA - dateB;
+      }),
     [safeEvents]
   );
 
   const nextEvent = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return sortedEvents.find((event) => new Date(`${event.date}T00:00:00`) >= today);
+    return sortedEvents.find((event) => {
+      const d = new Date(String(event.date).includes('T') ? event.date : `${event.date}T00:00:00`);
+      return d >= today;
+    });
   }, [sortedEvents]);
 
   const filteredEvents = useMemo(() => {
     if (activeFilter === 'todos') return sortedEvents;
-    return sortedEvents.filter((event) => event.modality === activeFilter);
+    return sortedEvents.filter((event) => {
+      const m = String(event.modality).toLowerCase();
+      if (activeFilter === 'online') {
+        return m === 'online';
+      }
+      return m === 'presencial' || m === 'in_person';
+    });
   }, [activeFilter, sortedEvents]);
 
   return (
@@ -115,7 +137,15 @@ export default function EventsClient({ eventosDelBackend }: EventsSectionProps) 
 
             <div className="mx-auto flex max-w-4xl flex-col gap-6 animate-fadeUp [animation-delay:200ms]">
               {filteredEvents.length > 0 ? (
-                filteredEvents.map((event) => <EventCard key={event.id} event={event} />)
+                filteredEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isLoggedIn={isLoggedIn}
+                    isEnrolled={enrolledEventIds.includes(event.id)}
+                    currentPath={currentPath}
+                  />
+                ))
               ) : (
                 <div className="mx-auto flex max-w-md flex-col items-center py-8 text-center">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

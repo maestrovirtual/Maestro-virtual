@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight, Clock3, Monitor, Award } from "lucide-react";
+import { Clock3, Monitor, Award } from "lucide-react";
 import { motion } from "framer-motion";
 
 import Container from "@/components/ui/Container";
+import EnrollButton from "@/features/enrollments/components/EnrollButton";
 
 import CourseBackground from "../components/CourseBackground";
 
@@ -13,6 +14,9 @@ import type { Course } from "../data/courses";
 
 type CourseHeroProps = {
   course: Course;
+  isEnrolled?: boolean;
+  isLoggedIn?: boolean;
+  currentPath?: string;
 };
 
 
@@ -37,6 +41,9 @@ function hexToRgba(hex: string, alpha: number) {
 
 export default function CourseHero({
   course,
+  isEnrolled = false,
+  isLoggedIn = false,
+  currentPath,
 }: CourseHeroProps) {
 
 
@@ -431,45 +438,15 @@ export default function CourseHero({
             >
 
 
-              <button
-
-                className="
-                group
-                flex
-                items-center
-                gap-2
-                rounded-full
-                px-7
-                py-3.5
-                font-semibold
-                text-white
-                shadow-lg
-                transition-all
-                hover:-translate-y-1
-                "
-
-                style={{
-                  backgroundColor:course.color
-                }}
-
-              >
-
-                Comenzar curso
-
-
-                <ArrowRight
-
-                  size={18}
-
-                  className="
-                  transition-transform
-                  group-hover:translate-x-1
-                  "
-
-                />
-
-
-              </button>
+              <EnrollButton
+                itemId={course.id}
+                itemType="COURSE"
+                isEnrolled={isEnrolled}
+                isLoggedIn={isLoggedIn}
+                currentPath={currentPath ?? `/courses/${course.slug}`}
+                accentColor={course.color}
+                label="Inscribirme al curso"
+              />
 
 
 
