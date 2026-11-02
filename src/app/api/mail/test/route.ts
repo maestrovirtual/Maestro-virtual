@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { resend } from "@/lib/mail/resend";
+import { getResend } from "@/lib/mail/resend";
 // Temporary endpoint to verify Resend integration.
 // Remove after contact form integration.
 export async function GET() {
   try {
-    const email = await resend.emails.send({
+    const email = await getResend().emails.send({
       from: "onboarding@resend.dev",
       to: process.env.CONTACT_EMAIL!,
       subject: "Prueba de correo - Maestro Virtual",

@@ -335,6 +335,29 @@ npm test
 
 ---
 
+# Base de datos y migraciones
+
+La base de datos (PostgreSQL en Supabase) es **compartida por todo el equipo**. Las tablas se definen en `prisma/schema.prisma` y cada cambio va en una migración dentro de `prisma/migrations/`.
+
+Aplicar las migraciones pendientes:
+
+```bash
+npx prisma migrate deploy
+```
+
+- Usar `migrate deploy` sobre la base compartida: solo aplica lo pendiente y **nunca borra datos**.
+- Si `prisma migrate dev` ofrece **resetear la base de datos** («We need to reset…»), responder **que no**: borraría los datos de todos. Suele pasar cuando alguien ya aplicó una migración de un PR que todavía no está en tu rama.
+- Revisar el estado: `npx prisma migrate status`.
+
+### Seguridad: la API pública de Supabase está cerrada
+
+La app solo accede a la base por Prisma (rol `postgres`). La API REST/GraphQL de Supabase con la llave `anon` **no se usa** y está bloqueada: todas las tablas de `public` tienen RLS activo y los roles `anon` y `authenticated` no tienen permisos (migración `20261028180000_enable_rls_public`).
+
+- Las tablas nuevas reciben RLS automáticamente (event trigger `rls_auto_enable`); no hace falta hacer nada en las migraciones.
+- Si algún día se usa `supabase-js` desde el navegador, habrá que escribir políticas RLS para cada tabla que se exponga. Mientras tanto, no usar la llave `anon` para leer datos.
+
+---
+
 # Equipo de desarrollo
 
 Proyecto desarrollado para Maestro Virtual A.C.

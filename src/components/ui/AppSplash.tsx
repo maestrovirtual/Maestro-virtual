@@ -7,6 +7,11 @@
 // ANTES del primer paint si ya se mostró en esta sesión -> CSS lo oculta.
 // Resultado: cero flash de contenido antes del splash.
 //
+// Ya no se autooculta: se queda con el título hasta que la persona hace
+// clic en "Click to continue", momento en el que se dispara una
+// animación de difusión (un círculo que crece desde el punto del clic)
+// antes de revelar el sitio.
+//
 // Además escucha el evento 'mv-splash-replay' (disparado al clic en el logo
 // del Navbar/Footer) para poder re-animarlo bajo demanda.
 
@@ -15,24 +20,26 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 const STORAGE_KEY = 'mv-splash-shown';
 const REPLAY_EVENT = 'mv-splash-replay';
-const VISIBLE_MS = 1500;
+const CTA_DELAY_MS = 1400;
+const AUTO_CLOSE_MS = 6000;
 
 type SplashState = { id: number; visible: boolean };
+type Ripple = { x: number; y: number; size: number };
 
 export default function AppSplash() {
   // Estado combinado:
   //   - `id` es MONOTÓNICO (nunca decrece) y se usa como `key` del
   //     motion.div. Cada replay lo incrementa -> AnimatePresence
   //     siempre ve un elemento nuevo, initial->animate limpio.
-  //   - `visible` controla si se renderiza. El auto-hide sólo lo
-  //     toca a él, dejando `id` intacto para no colisionar con
-  //     keys previamente usadas si el usuario clickea rápido.
+  //   - `visible` controla si se renderiza. Solo pasa a false cuando la
+  //     animación de difusión termina (click en "Click to continue").
   const [state, setState] = useState<SplashState>({ id: 1, visible: true });
+  const [showCta, setShowCta] = useState(false);
+  const [ripple, setRipple] = useState<Ripple | null>(null);
 
-  // Cada session visible: marca sessionStorage y agenda auto-hide.
-  // Deps en `id` (no `visible`) para que el timer arranque en cada
-  // nuevo session (incluyendo replays), y no dispare de más al
-  // limpiar `visible`.
+  // Cada sesión visible: marca sessionStorage y agenda cuándo aparece
+  // "Click to continue". Deps en `id` para que vuelva a correr en cada
+  // replay.
   useEffect(() => {
     // Si ya se mostró antes en esta sesión, lo desmontamos inmediatamente.
     // El script en el head evita que haya un parpadeo visual.
@@ -44,10 +51,16 @@ export default function AppSplash() {
 
     if (!state.visible) return;
     sessionStorage.setItem(STORAGE_KEY, '1');
-    const timer = setTimeout(() => {
-      setState((s) => ({ ...s, visible: false }));
-    }, VISIBLE_MS);
-    return () => clearTimeout(timer);
+    setShowCta(false);
+    setRipple(null);
+    const timer = setTimeout(() => setShowCta(true), CTA_DELAY_MS);
+    const autoCloseTimer = setTimeout(() => {
+      setRipple({ x: window.innerWidth / 2, y: window.innerHeight / 2, size: Math.hypot(window.innerWidth, window.innerHeight) * 2.2 });
+    }, AUTO_CLOSE_MS);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(autoCloseTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.id]);
 
@@ -64,6 +77,16 @@ export default function AppSplash() {
     return () => window.removeEventListener(REPLAY_EVENT, handleReplay);
   }, []);
 
+  function continueIntoSite(event: React.MouseEvent<HTMLButtonElement | HTMLDivElement>) {
+    if (ripple) return;
+    const x = event.clientX;
+    const y = event.clientY;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const farthestCorner = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y));
+    setRipple({ x, y, size: farthestCorner * 2.2 });
+  }
+
   return (
     <AnimatePresence>
       {state.visible && (
@@ -72,22 +95,27 @@ export default function AppSplash() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="app-splash-overlay fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+          className="app-splash-overlay fixed inset-0 z-[100] flex items-center justify-center overflow-hidden cursor-pointer"
           style={{
             background:
               'linear-gradient(135deg, #2563EA 0%, #1E40AF 40%, #10B982 100%)',
           }}
-          aria-hidden
+          onClick={(e) => showCta && continueIntoSite(e)}
         >
           {/* Halo de luz sutil detrás del logo, para dar profundidad */}
           <motion.div
+            aria-hidden
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1.3, opacity: 0.35 }}
             transition={{ duration: 1.4, ease: 'easeOut' }}
             className="absolute h-[500px] w-[500px] rounded-full bg-white/25 blur-3xl"
           />
 
-          <div className="relative flex flex-col items-center px-6 text-center">
+          <motion.div
+            animate={ripple ? { opacity: 0 } : { opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="relative flex flex-col items-center px-6 text-center"
+          >
             <motion.h1
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -99,6 +127,7 @@ export default function AppSplash() {
             </motion.h1>
 
             <motion.div
+              aria-hidden
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -106,6 +135,7 @@ export default function AppSplash() {
             />
 
             <motion.p
+              aria-hidden
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.85 }}
               transition={{ duration: 0.6, delay: 0.7 }}
@@ -113,7 +143,47 @@ export default function AppSplash() {
             >
               Aprende · Conecta · Crece
             </motion.p>
-          </div>
+
+            <AnimatePresence>
+              {showCta && !ripple && (
+                <motion.button
+                  type="button"
+                  onClick={continueIntoSite}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-12 rounded-full border border-white/40 px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.3em] text-white/90 outline-none transition hover:border-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70"
+                >
+                  <motion.span
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    Click to continue
+                  </motion.span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {ripple && (
+            <motion.div
+              aria-hidden
+              initial={{ width: 0, height: 0, opacity: 0.95 }}
+              animate={{ width: ripple.size, height: ripple.size, opacity: 1 }}
+              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+              onAnimationComplete={() => setState((s) => ({ ...s, visible: false }))}
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                left: ripple.x,
+                top: ripple.y,
+                marginLeft: -ripple.size / 2,
+                marginTop: -ripple.size / 2,
+                background:
+                  'linear-gradient(135deg, #10B982 0%, #2563EA 60%, #1E40AF 100%)',
+              }}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

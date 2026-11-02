@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { isLikelyContactSpam } from "@/lib/contact/spam";
+import prisma from "@/lib/prisma/client";
 import { resolveMx } from "node:dns/promises";
 import { sendContactEmail } from "@/services/mail/sendContactEmail";
 
@@ -148,22 +150,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await sendContactEmail({
-      name: nameTrim,
-      email: emailTrim,
-      subject: subjectTrim,
-      message: messageTrim,
+    const isSpam = isLikelyContactSpam({ subject: subjectTrim, message: messageTrim });
+    const saved = await prisma.contactMessage.create({
+      data: { name: nameTrim, email: emailTrim, subject: subjectTrim, message: messageTrim, isSpam },
     });
 
-    if (result.error) {
-      console.error("Resend error:", result.error);
-      return NextResponse.json(
-        { success: false, error: "No se pudo enviar el mensaje" },
-        { status: 502 }
-      );
+    // Una falla en la notificación no debe perder un mensaje ya recibido
+    // ni pedir al visitante que vuelva a enviarlo y lo duplique.
+    let notificationSent = false;
+    try {
+      if (!isSpam) {
+        const result = await sendContactEmail({
+          name: nameTrim, email: emailTrim, subject: subjectTrim, message: messageTrim,
+        });
+        notificationSent = !result.error;
+        if (result.error) console.error("Contact notification failed:", result.error);
+      }
+    } catch (error) {
+      console.error("Contact notification failed:", error);
     }
 
-    return NextResponse.json({ success: true, id: result.data?.id });
+    return NextResponse.json({ success: true, id: saved.id, notificationSent });
   } catch (error) {
     console.error("Contact endpoint error:", error);
     return NextResponse.json(

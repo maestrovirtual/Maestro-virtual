@@ -3,8 +3,16 @@
  */
 
 
+import { NextResponse } from 'next/server';
 import { GET, POST } from '../../src/app/api/courses/route';
 import prisma from '../../src/lib/prisma/client';
+import { requireStaffApi } from '../../src/lib/auth/dal';
+
+// Mock de la verificacion de staff (MV-33)
+jest.mock('../../src/lib/auth/dal', () => ({
+  __esModule: true,
+  requireStaffApi: jest.fn(),
+}));
 
 // Mock de Prisma
 jest.mock(
@@ -25,6 +33,7 @@ describe('API /api/courses', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, 'error').mockImplementation(() => {}); // 👈 Silencia console.error
+    (requireStaffApi as jest.Mock).mockResolvedValue(null); // Por defecto: peticion de un staff
   });
 
   afterEach(() => {
@@ -108,6 +117,23 @@ describe('API /api/courses', () => {
 
       expect(response.status).toBe(500);
       expect(data).toEqual({ error: 'Error interno del servidor al crear el curso' });
+    });
+
+    test.each([
+      [401, 'No autenticado'],
+      [403, 'No autorizado'],
+    ])('Debe retornar %i sin crear el curso si quien lo pide no es staff', async (status, error) => {
+      (requireStaffApi as jest.Mock).mockResolvedValue(NextResponse.json({ error }, { status }));
+
+      const req = new Request('http://localhost:3000/api/courses', {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Curso', slug: 'curso' }),
+      });
+
+      const response = await POST(req);
+
+      expect(response.status).toBe(status);
+      expect(prisma.course.create).not.toHaveBeenCalled();
     });
   });
 });

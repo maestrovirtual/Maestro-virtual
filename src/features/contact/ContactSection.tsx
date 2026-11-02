@@ -35,8 +35,8 @@ export default function ContactSection() {
         body: JSON.stringify(formData),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.error ?? 'No se pudo enviar el mensaje');
+      if (!res.ok || !data?.success || !data.id || data.id === 'skipped') {
+        throw new Error(data?.error ?? 'No se pudo registrar el mensaje. Recarga la página e intenta de nuevo.');
       }
       setSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '', website: '' });
@@ -106,7 +106,9 @@ export default function ContactSection() {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 sm:p-8 flex flex-col gap-5">
-              <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+              {/* Oculto también para el autocompletado del navegador. El servidor
+                  conserva la validación antispam de este campo. */}
+              <div hidden aria-hidden="true">
                 <label htmlFor="website">No rellenar</label>
                 <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" value={formData.website} onChange={handleChange} />
               </div>

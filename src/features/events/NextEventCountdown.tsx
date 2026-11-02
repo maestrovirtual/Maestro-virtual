@@ -10,11 +10,14 @@ interface NextEventCountdownProps {
 }
 
 export default function NextEventCountdown({ event }: NextEventCountdownProps) {
-  const eventDate = new Date(`${event.date}T00:00:00`);
+  const safeDateStr = String(event.date || '');
+  const eventDate = safeDateStr.includes('T')
+    ? new Date(safeDateStr)
+    : new Date(`${safeDateStr}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const diffMs = eventDate.getTime() - today.getTime();
+  const diffMs = isNaN(eventDate.getTime()) ? 0 : eventDate.getTime() - today.getTime();
   const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
   return (

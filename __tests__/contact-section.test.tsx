@@ -66,3 +66,35 @@ describe('Feature: ContactSection', () => {
     expect(submitButton).toBeInTheDocument();
   });
 });
+// El correo de notificación es opcional; la confirmación requiere que el
+// servidor haya guardado un mensaje real, no una respuesta señuelo antispam.
+describe('Confirmación de recepción del contacto', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => { global.fetch = originalFetch; });
+
+  function fillAndSubmit() {
+    const view = render(<ContactSection />);
+    fireEvent.change(screen.getByLabelText(/^Nombre:/i), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText(/^De:/i), { target: { value: 'ana@gmail.com' } });
+    fireEvent.change(screen.getByLabelText(/^Asunto:/i), { target: { value: 'Prueba MV34' } });
+    fireEvent.change(screen.getByLabelText(/^Mensaje:/i), { target: { value: 'Información de los cursos' } });
+    fireEvent.submit(view.container.querySelector('form')!);
+    return view;
+  }
+
+  it('confirma el mensaje guardado aunque no se haya enviado la notificación', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, id: 'saved-message', notificationSent: false }) });
+    global.fetch = fetchMock;
+    fillAndSubmit();
+    expect(await screen.findByRole('button', { name: /Redactar otro mensaje/i })).toBeInTheDocument();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ name: 'Ana', email: 'ana@gmail.com', subject: 'Prueba MV34', message: 'Información de los cursos', website: '' });
+  });
+
+  it('no muestra éxito cuando el filtro antispam descartó el mensaje', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, id: 'skipped' }) });
+    const { container } = fillAndSubmit();
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo registrar el mensaje');
+    expect(screen.queryByRole('button', { name: /Redactar otro mensaje/i })).not.toBeInTheDocument();
+    expect(container.querySelector('input[name="website"]')?.parentElement).toHaveAttribute('hidden');
+  });
+});

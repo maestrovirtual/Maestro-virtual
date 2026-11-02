@@ -1,4 +1,4 @@
-import { resend } from "@/lib/mail/resend";
+import { getResend } from "@/lib/mail/resend";
 
 export type ContactEmailPayload = {
   name: string;
@@ -105,8 +105,8 @@ function buildHtml(payload: ContactEmailPayload): string {
 }
 
 export async function sendContactEmail(payload: ContactEmailPayload) {
-  return await resend.emails.send({
-    from: "onboarding@resend.dev",
+  return await getResend().emails.send({
+    from: process.env.MAIL_FROM?.trim() || "onboarding@resend.dev",
     to: process.env.CONTACT_EMAIL!,
     replyTo: payload.email,
     subject: `[Maestro Virtual] ${payload.subject}`,

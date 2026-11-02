@@ -14,6 +14,7 @@ import {
   FaLinkedinIn,
   FaYoutube,
   FaTiktok,
+  FaWhatsapp,
 } from "react-icons/fa6";
 
 import Container from "@/components/ui/Container";
@@ -60,12 +61,17 @@ const socialLinks = [
   {
     label: "LinkedIn",
     icon: FaLinkedinIn,
-    href: "#",
+    href: "https://www.linkedin.com/company/maestro-virtual-a-c/",
   },
   {
     label: "TikTok",
     icon: FaTiktok,
     href: "https://www.tiktok.com/@maestrovirtual.a.c?_r=1&_t=ZS-99XYM39hgw6",
+  },
+  {
+    label: "WhatsApp",
+    icon: FaWhatsapp,
+    href: "https://wa.me/528122072889",
   },
 ];
 
@@ -140,29 +146,29 @@ export default function Footer() {
 
           <div className="space-y-3">
             <Link
-            href="/"
-            onClick={() => replayAppSplash()}
-            data-skip-transition-flash="true"
-            className="
+              href="/"
+              onClick={() => replayAppSplash()}
+              data-skip-transition-flash="true"
+              className="
             inline-flex
             items-center
             "
-          >
-            <Image
-              src="/images/logo/maestrovirtual.webp"
-              alt="Maestro Virtual"
-              width={280}
-              height={60}
-              priority
-              style={{ width: "280px", height: "auto" }}
-              className="
+            >
+              <Image
+                src="/images/logo/maestrovirtual.webp"
+                alt="Maestro Virtual"
+                width={280}
+                height={60}
+                priority
+                style={{ width: "280px", height: "auto" }}
+                className="
               object-contain
               transition-transform
               duration-300
               hover:scale-105
               "
-            />
-          </Link>
+              />
+            </Link>
 
             <p
               className="
@@ -216,7 +222,7 @@ export default function Footer() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               {socialLinks.map(({ icon: Icon, href, label }) => {
                 const isPending = href === "#";
 
@@ -235,6 +241,7 @@ export default function Footer() {
                     flex
                     h-11
                     w-11
+                    shrink-0
 
                     items-center
                     justify-center
@@ -253,11 +260,10 @@ export default function Footer() {
                     transition-all
                     duration-300
 
-                    ${
-                      isPending
+                    ${isPending
                         ? "cursor-not-allowed opacity-60"
                         : "hover:-translate-y-1 hover:border-primary hover:bg-primary"
-                    }
+                      }
                     `}
                   >
                     <Icon
@@ -337,7 +343,7 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-                    {/* Recursos */}
+          {/* Recursos */}
 
           <div>
             <h3
