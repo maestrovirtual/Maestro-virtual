@@ -26,7 +26,9 @@ Implementación del flujo de inscripción para usuarios finales desde el catálo
   - Obtiene la sesión segura mediante `getCurrentUser()` (integración con MV-36).
   - Lanza error `401 Unauthorized` si no hay sesión activa.
   - Ejecuta `prisma.enrollment.findFirst` para verificar la existencia previa de una inscripción del `userId` hacia el `courseId` o `eventId`, filtrando explícitamente aquellos con `status: "CANCELLED"`.
-  - Crea el registro en Prisma con estado `REGISTERED` y ejecuta `revalidatePath` para invalidar la caché de la vista actual.
+  - **Inserción resiliente en Prisma (`prisma.enrollment.create`):** Envuelto en un bloque `try/catch` directo. Ante fallos de conexión o errores en la base de datos, registra el error en los logs del servidor (`console.error`) y retorna un estado de fallo seguro (`{ success: false, error: "..." }`) evitando que la excepción crashee Next.js con un error 500 genérico.
+  - **Notificación por Correo (`sendEnrollmentConfirmation`):** Envío automático de confirmación según el tipo (`COURSE` o `EVENT`), aislado en su propio `try/catch` para no invalidar una inscripción exitosa si el servicio de correo presenta intermitencias.
+  - Ejecuta `revalidatePath` para invalidar la caché de la ruta de origen y la raíz, retornando el resultado tipado (`EnrollActionResult`).
 
 ### 2.2. Componente Cliente (`src/features/enrollments/components/EnrollButton.tsx`)
 Diseñado para reaccionar a tres estados de sesión inyectados desde el servidor:
@@ -59,10 +61,14 @@ Para evitar parpadeos de hidratación, el estado de la inscripción se resuelve 
 1. **Retención de Contexto (`?next=`):** Al integrar la validación en el componente, evitamos que un usuario interesado en un curso pierda la navegación si necesita crear una cuenta primero.
 2. **Filtro de Estado `CANCELLED`:** A nivel de validación de Prisma, omitir los registros cancelados previene colisiones si en el futuro un alumno decide retomar un curso del que previamente se había dado de baja.
 3. **Optimización de Server Components:** Extraer la validación de `prisma.enrollment.findFirst` hacia el layout superior de la página y pasar el resultado como Prop reduce drásticamente las consultas en cascada al renderizar listas de eventos.
+4. **Manejo Defensivo y Resiliencia en Server Actions:** En lugar de permitir que excepciones no controladas de la base de datos se propaguen al runtime de Next.js generando errores HTTP 500 opacos, se aíslan las operaciones críticas (`prisma.enrollment.create` y el envío de correos) en bloques `try/catch` independientes, retornando contratos de respuesta tipados (`EnrollActionResult`) con retroalimentación clara y amigable hacia la interfaz de usuario.
 
 ---
 
 ## 4. Métricas de Calidad
 - **Tipado Estricto:** Ejecución de `npx tsc --noEmit` completada sin errores (0 `any` detectados).
-- **Cobertura de Pruebas:** Implementación de `__tests__/enrollment-button.test.tsx` y `__tests__/admin-enrollments-table.test.tsx` en Jest, validando exitosamente el comportamiento del botón y la tabla administrativa de inscritos.
+- **Cobertura de Pruebas:** 
+  - `__tests__/enrollment-button.test.tsx`: Validación de estados del botón de inscripción (no logueado, inscrito, modal interactivo).
+  - `__tests__/admin-enrollments-table.test.tsx`: Renderizado y comportamiento de la tabla administrativa de inscritos.
+  - `__tests__/enrollment-action.test.ts`: Pruebas unitarias para `enrollUserAction`, validando el flujo exitoso y la captura controlada de errores de base de datos sin crashear el servidor.
 - **QA Manual:** Verificación en base de datos local usando Prisma Studio garantizando la correcta creación de registros en la tabla `Enrollment` y la imposibilidad de inyectar duplicados.
