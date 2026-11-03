@@ -82,17 +82,27 @@ export async function enrollUserAction(
     };
   }
 
-  const enrollment = await prisma.enrollment.create({
-    data: {
-      userId: user.id,
-      status: "REGISTERED",
-      ...relationFilter,
-    },
-    include: {
-      course: true,
-      event: true,
-    },
-  });
+  let enrollment;
+  try {
+    enrollment = await prisma.enrollment.create({
+      data: {
+        userId: user.id,
+        status: "REGISTERED",
+        ...relationFilter,
+      },
+      include: {
+        course: true,
+        event: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error al guardar inscripción:", error);
+    return {
+      success: false,
+      error:
+        "No se pudo procesar tu inscripción en este momento. Por favor, verifica los datos e intenta de nuevo.",
+    };
+  }
 
   // Enviar correo de confirmación automáticamente
   try {
