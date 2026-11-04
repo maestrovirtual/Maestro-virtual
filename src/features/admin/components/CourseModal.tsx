@@ -6,7 +6,7 @@ import { X, Save, Loader2, Image as ImageIcon, Upload, Trash2 } from "lucide-rea
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { createCourseAction, updateCourseAction } from "@/features/admin/actions/course.actions";
-import { validateImageFile } from "@/lib/storage";
+import { validateImageFile } from "@/lib/storage/validation";
 import type { AdminCourse } from "../types/course.types";
 
 interface CourseModalProps {

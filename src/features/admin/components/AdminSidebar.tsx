@@ -24,7 +24,7 @@ export default function AdminSidebar() {
                     alt="Maestro Virtual Logo"
                     width={144}
                     height={44}
-                    priority
+                    priority={true}
                     className="h-auto w-full object-contain md:w-36"
                 />
                 <span className="ml-2 hidden md:inline rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">ADMIN</span>

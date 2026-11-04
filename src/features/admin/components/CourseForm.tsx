@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createCourseAction, updateCourseAction } from "@/features/admin/actions/course.actions";
-import { validateImageFile } from "@/lib/storage";
+import { validateImageFile } from "@/lib/storage/validation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Save, ArrowLeft, Loader2, Image as ImageIcon, Upload, Trash2 } from "lucide-react";

@@ -1,50 +1,16 @@
 /**
  * Servicio de almacenamiento (Storage) para Maestro Virtual.
- * Soporta Supabase Storage mediante REST API estándar y fallback local para entornos de desarrollo.
+ * Soporta Supabase Storage mediante REST API estándar con service_role.
  */
 
-export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+import {
+  MAX_IMAGE_SIZE,
+  ALLOWED_IMAGE_TYPES,
+  validateImageFile,
+  type UploadResult,
+} from "./validation";
 
-export const ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-  "image/gif",
-];
-
-export interface UploadResult {
-  url: string;
-  path: string;
-}
-
-/**
- * Valida que el archivo recibido sea una imagen permitida y no exceda el límite de tamaño.
- */
-export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  if (!file || typeof file.size !== "number" || file.size === 0) {
-    return { valid: false, error: "El archivo proporcionado no es válido o está vacío." };
-  }
-
-  // Comprobar tipo MIME
-  const isImageMime = file.type.startsWith("image/") || ALLOWED_IMAGE_TYPES.includes(file.type);
-  if (!isImageMime) {
-    return {
-      valid: false,
-      error: "El archivo seleccionado debe ser una imagen válida (JPG, PNG, WebP, AVIF o GIF).",
-    };
-  }
-
-  // Comprobar tamaño
-  if (file.size > MAX_IMAGE_SIZE) {
-    return {
-      valid: false,
-      error: `La imagen excede el tamaño máximo permitido de ${MAX_IMAGE_SIZE / (1024 * 1024)}MB.`,
-    };
-  }
-
-  return { valid: true };
-}
+export { MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES, validateImageFile, type UploadResult };
 
 /**
  * Intenta crear automáticamente un bucket público en Supabase Storage si no existe.
@@ -170,26 +136,9 @@ export async function uploadEventImage(
     return { url: publicUrl, path: filePath };
   }
 
-  // Fallback para desarrollo local si no hay credenciales de Supabase activas
-  try {
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "events");
-    await fs.mkdir(uploadsDir, { recursive: true });
-
-    const localPath = path.join(uploadsDir, uniqueFileName);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(localPath, buffer);
-
-    const localUrl = `/uploads/events/${uniqueFileName}`;
-    return { url: localUrl, path: filePath };
-  } catch (fsError) {
-    throw new Error(
-      `No se pudo almacenar la imagen en el almacenamiento local: ${
-        fsError instanceof Error ? fsError.message : String(fsError)
-      }`
-    );
-  }
+  throw new Error(
+    "Supabase Storage no está configurado. Define NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en las variables de entorno."
+  );
 }
 
 /**
