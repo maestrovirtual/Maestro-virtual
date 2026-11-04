@@ -24,4 +24,5 @@ export interface EventItem {
   address?: string; // solo si es presencial
   platform?: string; // solo si es online
   requirements?: string; // Requerido para el participante
+  image?: string; // URL de la portada o afiche del evento
 }

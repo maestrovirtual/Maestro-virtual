@@ -57,7 +57,7 @@ export default function StaffLoginForm({ locale }: { locale: string }) {
           alt="Maestro Virtual"
           width={144}
           height={44}
-          priority
+          priority={true}
           className="object-contain"
         />
         <div>

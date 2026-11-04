@@ -75,4 +75,77 @@ describe('Public EventCard', () => {
     expect(screen.getByText('Arbitraria')).toBeInTheDocument();
     expect(screen.getByText('En línea')).toBeInTheDocument();
   });
+
+  it('muestra el botón "Explorar evento" y si tiene imagen la despliega sin recortar con object-contain', () => {
+    const eventWithImage: EventItem = {
+      id: 'evt-img-1',
+      title: 'Taller con Afiche Digital',
+      category: 'canva',
+      profile: 'Estudiantes y profesores',
+      objective: 'Aprender diseño y tecnología',
+      duration: '4 horas',
+      participants: '25 personas',
+      date: '2026-11-20',
+      time: '14:00 - 18:00 hrs',
+      modality: 'presencial',
+      location: 'Auditorio Central',
+      requirements: 'Llevar laptop con cargador',
+      image: 'https://fqwgfgppvlqgddxvzixu.supabase.co/storage/v1/object/public/events/poster.jpeg',
+    };
+
+    render(<EventCard event={eventWithImage} />);
+
+    // Verifica que el botón "Explorar evento" existe
+    const exploreBtn = screen.getByRole('button', { name: /explorar evento/i });
+    expect(exploreBtn).toBeInTheDocument();
+
+    // Verifica que la imagen existe y tiene clase object-contain (sin recortar)
+    const imgEl = screen.getByAltText('Taller con Afiche Digital');
+    expect(imgEl).toBeInTheDocument();
+    expect(imgEl.className).toContain('object-contain');
+  });
+
+  it('abre el modal de detalles con información completa y afiche al hacer clic en "Explorar evento"', async () => {
+    const { fireEvent, within } = await import('@testing-library/react');
+
+    const eventDetails: EventItem = {
+      id: 'evt-modal-1',
+      title: 'Hackathon Ambiental 2026',
+      category: 'emprendimiento',
+      profile: 'Desarrolladores y emprendedores ecológicos',
+      objective: 'Crear soluciones sostenibles de alto impacto',
+      duration: '24 horas continuas',
+      participants: '100 participantes',
+      date: '2026-11-30',
+      time: '09:00 hrs',
+      modality: 'presencial',
+      location: 'Tec de Monterrey',
+      address: 'Centro de Biotecnología',
+      requirements: 'Conocimientos de programación y ganas de colaborar',
+      image: 'https://fqwgfgppvlqgddxvzixu.supabase.co/storage/v1/object/public/events/hackathon.png',
+    };
+
+    render(<EventCard event={eventDetails} />);
+
+    // El modal no debe estar visible inicialmente
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Hacemos clic en "Explorar evento"
+    const exploreBtn = screen.getByRole('button', { name: /explorar evento/i });
+    fireEvent.click(exploreBtn);
+
+    // Ahora el modal dialog está visible
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+
+    // Contiene la información detallada (perfil, requisitos, afiche completo) dentro del modal
+    expect(within(dialog).getByText(/Desarrolladores y emprendedores ecológicos/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Conocimientos de programación y ganas de colaborar/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/24 horas continuas/i)).toBeInTheDocument();
+
+    // Cierra el modal con el botón "Cerrar" dentro del modal
+    const closeBtn = within(dialog).getByRole('button', { name: /cerrar$/i });
+    fireEvent.click(closeBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

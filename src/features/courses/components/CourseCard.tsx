@@ -117,11 +117,13 @@ alt={course.title}
 fill
 
 className="
-object-cover
+object-contain
+p-2
 transition-transform
 duration-700
-group-hover:scale-110
+group-hover:scale-105
 "
+unoptimized={course.image.startsWith("http")}
 
 />
 
@@ -138,7 +140,11 @@ fill
 className="
 object-contain
 p-10
+transition-transform
+duration-700
+group-hover:scale-110
 "
+unoptimized={course.icon.startsWith("http")}
 
 />
 

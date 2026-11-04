@@ -193,7 +193,7 @@ export default function Navbar({
             alt="Maestro Virtual"
             width={144}
             height={44}
-            priority
+            priority={true}
             style={{ width: "144px", height: "auto" }}
             className="
             object-contain

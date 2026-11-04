@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma/client";
 import { revalidatePath } from "next/cache";
 import { Stage, CourseType, BackgroundPattern } from "@prisma/client";
 import { stageMap, typeMap, patternMap, resolveEnum } from "@/lib/prisma/course-enums";
+import { requireStaffApi } from "@/lib/auth/dal";
+import { uploadCourseImage, validateImageFile } from "@/lib/storage";
 import type { AdminCourse, CourseFormData } from "../types/course.types";
 
 export type ActionResult<T = unknown> = {
@@ -11,6 +13,66 @@ export type ActionResult<T = unknown> = {
   data?: T;
   error?: string;
 };
+
+function parseCourseInput(input: FormData | Partial<CourseFormData>): {
+  data: Partial<CourseFormData>;
+  imageFile: File | null;
+} {
+  if (typeof FormData !== "undefined" && input instanceof FormData) {
+    const fileEntry = input.get("image");
+    const imageFile = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+
+    const data: Partial<CourseFormData> = {
+      title: (input.get("title") as string) || undefined,
+      slug: (input.get("slug") as string) || undefined,
+      shortDescription: (input.get("shortDescription") as string) || undefined,
+      description: (input.get("description") as string) || undefined,
+      duration: (input.get("duration") as string) || undefined,
+      modality: (input.get("modality") as string) || undefined,
+      type: (input.get("type") as string) || undefined,
+      stage: (input.get("stage") as string) || undefined,
+      categories: input.get("categories")
+        ? (input.get("categories") as string)
+            .split(",")
+            .map((c) => c.trim())
+            .filter(Boolean)
+        : undefined,
+      skills: input.get("skills")
+        ? (input.get("skills") as string)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      image: (input.get("imageUrl") as string) || (typeof fileEntry === "string" ? fileEntry : undefined),
+      color: (input.get("color") as string) || undefined,
+      backgroundPattern: (input.get("backgroundPattern") as string) || undefined,
+      sessions: input.get("sessions") ? Number(input.get("sessions")) : null,
+      hoursPerSession: input.get("hoursPerSession") ? Number(input.get("hoursPerSession")) : null,
+      participants: (input.get("participants") as string) || undefined,
+      targetAudience: (input.get("targetAudience") as string) || undefined,
+      objective: (input.get("objective") as string) || undefined,
+      requirements: (input.get("requirements") as string) || undefined,
+      isActive: input.has("isActive") ? input.get("isActive") === "true" : true,
+      featured: input.has("featured") ? input.get("featured") === "true" : false,
+      clickable: true,
+    };
+
+    return { data, imageFile };
+  }
+
+  const anyInput = input as Record<string, unknown>;
+  let imageFile: File | null = null;
+  if (anyInput?.imageFile instanceof File && anyInput.imageFile.size > 0) {
+    imageFile = anyInput.imageFile;
+  } else if (anyInput?.image instanceof File && anyInput.image.size > 0) {
+    imageFile = anyInput.image;
+  }
+
+  return {
+    data: input as Partial<CourseFormData>,
+    imageFile,
+  };
+}
 
 export async function getAdminCourses(): Promise<AdminCourse[]> {
   try {
@@ -25,9 +87,19 @@ export async function getAdminCourses(): Promise<AdminCourse[]> {
 }
 
 export async function createCourseAction(
-  data: Partial<CourseFormData>
+  input: FormData | Partial<CourseFormData>
 ): Promise<ActionResult<AdminCourse>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
+    const { data, imageFile } = parseCourseInput(input);
+
     if (!data.title?.trim() || !data.slug?.trim()) {
       return {
         success: false,
@@ -40,6 +112,29 @@ export async function createCourseAction(
         success: false,
         error: "La descripción completa es obligatoria.",
       };
+    }
+
+    // Procesar y subir imagen si se adjuntó un archivo
+    let finalImageUrl = data.image?.trim() || "/images/courses/default.jpg";
+    if (imageFile) {
+      const validation = validateImageFile(imageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadCourseImage(imageFile);
+        finalImageUrl = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la imagen del curso al almacenamiento.";
+        return { success: false, error: message };
+      }
     }
 
     const stageValue = resolveEnum(
@@ -85,7 +180,7 @@ export async function createCourseAction(
         slug: data.slug.trim(),
         shortDescription: data.shortDescription?.trim() || "",
         description: data.description.trim(),
-        image: data.image?.trim() || "/images/courses/default.jpg",
+        image: finalImageUrl,
         icon: data.icon || null,
         video: data.video || null,
         color: data.color?.trim() || "#2563EB",
@@ -117,6 +212,9 @@ export async function createCourseAction(
 
     revalidatePath("/admin/cursos");
     revalidatePath("/admin/courses");
+    revalidatePath("/cursos");
+    revalidatePath("/courses");
+
     return {
       success: true,
       data: JSON.parse(JSON.stringify(course)) as AdminCourse,
@@ -132,12 +230,22 @@ export async function createCourseAction(
 
 export async function updateCourseAction(
   id: string,
-  data: Partial<CourseFormData>
+  input: FormData | Partial<CourseFormData>
 ): Promise<ActionResult<AdminCourse>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
     if (!id) {
       return { success: false, error: "ID del curso no proporcionado." };
     }
+
+    const { data, imageFile } = parseCourseInput(input);
 
     if (data.title !== undefined && !data.title.trim()) {
       return { success: false, error: "El título no puede estar vacío." };
@@ -149,13 +257,36 @@ export async function updateCourseAction(
 
     const updatePayload: Record<string, unknown> = {};
 
+    // Procesar nueva imagen si se adjuntó archivo
+    if (imageFile) {
+      const validation = validateImageFile(imageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadCourseImage(imageFile);
+        updatePayload.image = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la nueva imagen del curso al almacenamiento.";
+        return { success: false, error: message };
+      }
+    } else if (data.image !== undefined) {
+      updatePayload.image = data.image.trim();
+    }
+
     if (data.title !== undefined) updatePayload.title = data.title.trim();
     if (data.slug !== undefined) updatePayload.slug = data.slug.trim();
     if (data.shortDescription !== undefined)
       updatePayload.shortDescription = data.shortDescription.trim();
     if (data.description !== undefined)
       updatePayload.description = data.description.trim();
-    if (data.image !== undefined) updatePayload.image = data.image.trim();
     if (data.icon !== undefined) updatePayload.icon = data.icon;
     if (data.video !== undefined) updatePayload.video = data.video;
     if (data.color !== undefined) updatePayload.color = data.color.trim();
@@ -246,6 +377,9 @@ export async function updateCourseAction(
 
     revalidatePath("/admin/cursos");
     revalidatePath("/admin/courses");
+    revalidatePath("/cursos");
+    revalidatePath("/courses");
+
     return {
       success: true,
       data: JSON.parse(JSON.stringify(updated)) as AdminCourse,
@@ -261,6 +395,14 @@ export async function updateCourseAction(
 
 export async function deleteCourseAction(id: string): Promise<ActionResult<{ id: string }>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
     if (!id) {
       return { success: false, error: "ID del curso no proporcionado." };
     }
@@ -278,6 +420,9 @@ export async function deleteCourseAction(id: string): Promise<ActionResult<{ id:
 
     revalidatePath("/admin/cursos");
     revalidatePath("/admin/courses");
+    revalidatePath("/cursos");
+    revalidatePath("/courses");
+
     return { success: true, data: { id } };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error al eliminar el curso.";

@@ -17,6 +17,7 @@ export const events: EventItem[] = [
     modality: 'online',
     platform: 'Zoom',
     requirements: 'Acceso a una computadora con internet, libreta y pluma.',
+    image: 'https://placeholder.com/600x400',
   },
   {
     id: 'evt-002',
