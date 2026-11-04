@@ -43,14 +43,15 @@ export default function AdminEventCard({
   return (
     <Card variant="elevated" className="flex flex-col overflow-hidden p-0">
       {/* SECCIÓN DE LA IMAGEN */}
-      <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+      <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
         {isImageValid ? (
           <Image
             src={event.image}
             alt={event.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 hover:scale-105"
+            className="object-contain p-2 transition-transform duration-300 hover:scale-105"
+            unoptimized={event.image.startsWith("http")}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm font-medium text-slate-400">

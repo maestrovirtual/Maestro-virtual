@@ -3,6 +3,8 @@
 import prisma from "@/lib/prisma/client";
 import { revalidatePath } from "next/cache";
 import { Modality } from "@prisma/client";
+import { requireStaffApi } from "@/lib/auth/dal";
+import { uploadEventImage, validateImageFile } from "@/lib/storage";
 import type { AdminEvent, EventFormData } from "../types/event.types";
 
 export type ActionResult<T = unknown> = {
@@ -19,6 +21,50 @@ function resolveModality(value: unknown): Modality {
   return Modality.ONLINE;
 }
 
+function parseEventInput(input: FormData | Partial<EventFormData>): {
+  data: Partial<EventFormData>;
+  imageFile: File | null;
+} {
+  if (typeof FormData !== "undefined" && input instanceof FormData) {
+    const fileEntry = input.get("image");
+    const imageFile = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+
+    const data: Partial<EventFormData> = {
+      title: (input.get("title") as string) || undefined,
+      description: (input.get("description") as string) || undefined,
+      date: (input.get("date") as string) || undefined,
+      time: (input.get("time") as string) || undefined,
+      modality: (input.get("modality") as "ONLINE" | "IN_PERSON") || undefined,
+      category: (input.get("category") as string) || undefined,
+      image: (input.get("imageUrl") as string) || (typeof fileEntry === "string" ? fileEntry : undefined),
+      platform: (input.get("platform") as string) || null,
+      location: (input.get("location") as string) || null,
+      address: (input.get("address") as string) || null,
+      profile: (input.get("profile") as string) || null,
+      objective: (input.get("objective") as string) || null,
+      duration: (input.get("duration") as string) || null,
+      participants: (input.get("participants") as string) || null,
+      requirements: (input.get("requirements") as string) || null,
+      isActive: input.has("isActive") ? input.get("isActive") === "true" : true,
+    };
+
+    return { data, imageFile };
+  }
+
+  const anyInput = input as Record<string, unknown>;
+  let imageFile: File | null = null;
+  if (anyInput?.imageFile instanceof File && anyInput.imageFile.size > 0) {
+    imageFile = anyInput.imageFile;
+  } else if (anyInput?.image instanceof File && anyInput.image.size > 0) {
+    imageFile = anyInput.image;
+  }
+
+  return {
+    data: input as Partial<EventFormData>,
+    imageFile,
+  };
+}
+
 export async function getAdminEvents(): Promise<AdminEvent[]> {
   try {
     const rawEvents = await prisma.event.findMany({
@@ -32,9 +78,19 @@ export async function getAdminEvents(): Promise<AdminEvent[]> {
 }
 
 export async function createEventAction(
-  data: Partial<EventFormData>
+  input: FormData | Partial<EventFormData>
 ): Promise<ActionResult<AdminEvent>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
+    const { data, imageFile } = parseEventInput(input);
+
     if (!data.title?.trim()) {
       return {
         success: false,
@@ -57,13 +113,36 @@ export async function createEventAction(
       };
     }
 
+    // Procesar y subir imagen si se adjuntó un archivo
+    let finalImageUrl = data.image?.trim() || "/images/events/default.jpg";
+    if (imageFile) {
+      const validation = validateImageFile(imageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadEventImage(imageFile);
+        finalImageUrl = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la imagen al servicio de Storage.";
+        return { success: false, error: message };
+      }
+    }
+
     const modalityValue = resolveModality(data.modality);
 
     const event = await prisma.event.create({
       data: {
         title: data.title.trim(),
         description: data.description?.trim() || "Descripción pendiente",
-        image: data.image?.trim() || "/images/events/default.jpg",
+        image: finalImageUrl,
         date: parsedDate,
         time: data.time ? data.time.trim() : "Por definir",
         modality: modalityValue,
@@ -98,12 +177,22 @@ export async function createEventAction(
 
 export async function updateEventAction(
   id: string,
-  data: Partial<EventFormData>
+  input: FormData | Partial<EventFormData>
 ): Promise<ActionResult<AdminEvent>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
     if (!id) {
       return { success: false, error: "ID del evento no proporcionado." };
     }
+
+    const { data, imageFile } = parseEventInput(input);
 
     if (data.title !== undefined && !data.title.trim()) {
       return { success: false, error: "El título no puede estar vacío." };
@@ -111,9 +200,32 @@ export async function updateEventAction(
 
     const updatePayload: Record<string, unknown> = {};
 
+    // Procesar nueva imagen si se adjuntó archivo
+    if (imageFile) {
+      const validation = validateImageFile(imageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadEventImage(imageFile);
+        updatePayload.image = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la imagen al servicio de Storage.";
+        return { success: false, error: message };
+      }
+    } else if (data.image !== undefined) {
+      updatePayload.image = data.image.trim();
+    }
+
     if (data.title !== undefined) updatePayload.title = data.title.trim();
     if (data.description !== undefined) updatePayload.description = data.description.trim();
-    if (data.image !== undefined) updatePayload.image = data.image.trim();
 
     if (data.date !== undefined) {
       const parsedDate = new Date(data.date);
@@ -158,6 +270,14 @@ export async function updateEventAction(
 
 export async function deleteEventAction(id: string): Promise<ActionResult<{ id: string }>> {
   try {
+    const denied = await requireStaffApi();
+    if (denied) {
+      return {
+        success: false,
+        error: "No autorizado. Se requieren permisos de administrador (staff).",
+      };
+    }
+
     if (!id) {
       return { success: false, error: "ID del evento no proporcionado." };
     }

@@ -177,5 +177,23 @@ describe('CRUD Visual de Cursos (MV-21)', () => {
       expect(screen.getByDisplayValue('Descripción corta de prueba')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Descripción completa para el curso de prueba')).toBeInTheDocument();
     });
+
+    it('renderiza el input de archivo para subir la portada del curso', () => {
+      const handleClose = jest.fn();
+      const handleSaved = jest.fn();
+
+      render(
+        <CourseModal
+          isOpen={true}
+          courseToEdit={null}
+          onClose={handleClose}
+          onSaved={handleSaved}
+        />
+      );
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(fileInput).toBeInTheDocument();
+      expect(fileInput).toHaveAttribute('accept', 'image/*');
+    });
   });
 });

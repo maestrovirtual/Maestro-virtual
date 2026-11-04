@@ -56,6 +56,7 @@ async function fetchEventosReales(): Promise<EventItem[] | undefined> {
         address: e.address || undefined,
         platform: e.platform || undefined,
         requirements: e.requirements || undefined,
+        image: e.image || undefined,
       };
     });
   } catch (error) {

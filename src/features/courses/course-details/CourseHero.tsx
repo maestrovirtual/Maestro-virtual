@@ -644,11 +644,13 @@ export default function CourseHero({
             src={course.image || course.icon!}
             alt={course.title}
             fill
-            className="
+            priority={true}
+            className={`
             object-contain
-            scale-180
+            ${course.image ? "p-4" : "p-8"}
             drop-shadow-xl
-            "
+            `}
+            unoptimized={(course.image || course.icon)?.startsWith("http")}
             />
 
             ) : (
