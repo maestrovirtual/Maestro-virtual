@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { X, Save, Loader2, Image as ImageIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { X, Save, Loader2, Image as ImageIcon, Upload, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { createCourseAction, updateCourseAction } from "@/features/admin/actions/course.actions";
-import type { AdminCourse, CourseFormData } from "../types/course.types";
+import { validateImageFile } from "@/lib/storage";
+import type { AdminCourse } from "../types/course.types";
 
 interface CourseModalProps {
   isOpen: boolean;
@@ -74,7 +76,12 @@ function CourseModalDialog({
   const [stage, setStage] = useState(String(courseToEdit?.stage || "1"));
   const [isActive, setIsActive] = useState(courseToEdit?.isActive ?? true);
   const [featured, setFeatured] = useState(courseToEdit?.featured ?? false);
+
+  // Estados de Imagen y Subida de Archivos
   const [image, setImage] = useState(courseToEdit?.image || "/images/courses/default.jpg");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(courseToEdit?.image || null);
+
   const [color, setColor] = useState(courseToEdit?.color || "#2563EB");
   const [backgroundPattern, setBackgroundPattern] = useState(
     String(courseToEdit?.backgroundPattern || "GRID").toUpperCase()
@@ -98,6 +105,46 @@ function CourseModalDialog({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Limpieza de ObjectURL para evitar memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error || "El archivo seleccionado no es válido.");
+      e.target.value = "";
+      return;
+    }
+
+    setError(null);
+    setImageFile(file);
+
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+
+  const handleRemoveImage = () => {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setImageFile(null);
+    setPreviewUrl(courseToEdit?.image || null);
+    setImage(courseToEdit?.image || "/images/courses/default.jpg");
+  };
 
   // Title change with automatic slug generation
   const handleTitleChange = (val: string) => {
@@ -140,34 +187,39 @@ function CourseModalDialog({
 
     setIsSubmitting(true);
 
-    const payload: Partial<CourseFormData> = {
-      title: title.trim(),
-      slug: slug.trim(),
-      shortDescription: shortDescription.trim(),
-      description: description.trim(),
-      duration: duration.trim(),
-      modality: modality.trim(),
-      categories: categories.split(",").map((c) => c.trim()).filter(Boolean),
-      skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
-      type,
-      stage,
-      isActive,
-      featured,
-      image: image.trim() || "/images/courses/default.jpg",
-      color: color.trim() || "#2563EB",
-      backgroundPattern,
-      sessions: sessions ? Number(sessions) : null,
-      hoursPerSession: hoursPerSession ? Number(hoursPerSession) : null,
-      participants: participants.trim() || "10 - 15 participantes",
-      targetAudience: targetAudience.trim() || "Público en general",
-      objective: objective.trim() || "",
-      requirements: requirements.trim() || "Ninguno",
-      clickable: true,
-    };
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("slug", slug.trim());
+    formData.append("shortDescription", shortDescription.trim());
+    formData.append("description", description.trim());
+    formData.append("duration", duration.trim());
+    formData.append("modality", modality.trim());
+    formData.append("type", type);
+    formData.append("stage", stage);
+    formData.append("color", color.trim() || "#2563EB");
+    formData.append("backgroundPattern", backgroundPattern);
+    formData.append("participants", participants.trim() || "10 - 15 participantes");
+    formData.append("targetAudience", targetAudience.trim() || "Público en general");
+    formData.append("objective", objective.trim() || "");
+    formData.append("requirements", requirements.trim() || "Ninguno");
+    formData.append("isActive", String(isActive));
+    formData.append("featured", String(featured));
+    formData.append("clickable", "true");
+
+    if (categories.trim()) formData.append("categories", categories.trim());
+    if (skills.trim()) formData.append("skills", skills.trim());
+    if (sessions) formData.append("sessions", sessions);
+    if (hoursPerSession) formData.append("hoursPerSession", hoursPerSession);
+
+    if (imageFile) {
+      formData.append("image", imageFile);
+    } else if (image) {
+      formData.append("imageUrl", image);
+    }
 
     try {
       if (isEditing && courseToEdit) {
-        const result = await updateCourseAction(courseToEdit.id, payload);
+        const result = await updateCourseAction(courseToEdit.id, formData);
         if (!result.success || !result.data) {
           setError(result.error || "Error al actualizar el curso.");
           setIsSubmitting(false);
@@ -175,7 +227,7 @@ function CourseModalDialog({
         }
         onSaved(result.data);
       } else {
-        const result = await createCourseAction(payload);
+        const result = await createCourseAction(formData);
         if (!result.success || !result.data) {
           setError(result.error || "Error al crear el curso.");
           setIsSubmitting(false);
@@ -214,7 +266,7 @@ function CourseModalDialog({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-lg p-2 text-text-secondary transition-colors hover:bg-slate-100 hover:text-text-primary dark:hover:bg-slate-800"
+            className="rounded-lg p-2 text-text-secondary transition-colors hover:bg-slate-100 hover:text-text-primary dark:hover:bg-slate-800 cursor-pointer"
             aria-label="Cerrar modal"
           >
             <X size={20} />
@@ -483,17 +535,81 @@ function CourseModalDialog({
                 Apariencia y Publicación
               </h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* CAMPO DE SUBIDA DE IMAGEN CON PREVIEW */}
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
-                    <ImageIcon size={14} /> URL de Imagen Principal
+                    <ImageIcon size={14} /> Portada / Imagen Principal del Curso
                   </label>
-                  <input
-                    type="text"
-                    value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder="Ej. /images/cursos/excel.jpg o https://..."
-                    className="w-full rounded-lg border border-border bg-background px-3.5 py-2 text-sm text-text-primary outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
-                  />
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed border-border bg-slate-50/60 p-4 dark:bg-slate-900/30">
+                    {/* Vista previa */}
+                    {previewUrl ? (
+                      <div className="relative h-28 w-44 shrink-0 overflow-hidden rounded-lg border border-border bg-slate-100 shadow-xs dark:bg-slate-800 flex items-center justify-center p-1">
+                        <Image
+                          src={previewUrl}
+                          alt="Vista previa de portada del curso"
+                          fill
+                          unoptimized
+                          className="h-full w-full object-contain"
+                        />
+                        {imageFile && (
+                          <span className="absolute bottom-1 right-1 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                            Nueva
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex h-28 w-44 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-slate-100 text-slate-400 dark:bg-slate-800">
+                        <ImageIcon size={28} />
+                        <span className="mt-1 text-[11px]">Sin imagen</span>
+                      </div>
+                    )}
+
+                    {/* Botones de acción */}
+                    <div className="flex flex-1 flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label
+                          htmlFor="course-cover-file"
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-xs font-semibold text-text-primary shadow-xs transition-colors hover:bg-slate-50 hover:text-primary dark:bg-slate-800 dark:hover:bg-slate-700"
+                        >
+                          <Upload size={14} />
+                          <span>{previewUrl ? "Cambiar imagen" : "Subir imagen"}</span>
+                        </label>
+                        <input
+                          id="course-cover-file"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          disabled={isSubmitting}
+                          className="sr-only"
+                        />
+
+                        {imageFile && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            disabled={isSubmitting}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>Quitar</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-text-secondary">
+                        {imageFile ? (
+                          <span className="font-medium text-primary">
+                            Archivo seleccionado: {imageFile.name} ({(imageFile.size / 1024).toFixed(0)} KB)
+                          </span>
+                        ) : previewUrl ? (
+                          <span>Imagen asignada actualmente. Puedes seleccionar un nuevo archivo desde tu computadora para actualizarla.</span>
+                        ) : (
+                          <span>Formatos admitidos: JPG, PNG, WebP o AVIF. Tamaño máximo: 5MB.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

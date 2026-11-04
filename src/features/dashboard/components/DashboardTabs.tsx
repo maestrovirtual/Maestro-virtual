@@ -71,7 +71,7 @@ function EnrolledCourseCard({
     >
       {/* Imagen del curso */}
       <div
-        className="relative h-48 w-full overflow-hidden bg-slate-100"
+        className="relative h-48 w-full overflow-hidden bg-slate-100 flex items-center justify-center"
         style={{
           background: `linear-gradient(135deg, ${accentColor}30, ${accentColor}08)`,
         }}
@@ -84,7 +84,7 @@ function EnrolledCourseCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             unoptimized={isExternalUrl(imageSrc)}
             onError={() => setImageError(true)}
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
           />
         ) : iconSrc ? (
           <Image
@@ -187,7 +187,7 @@ function EnrolledEventCard({
       className="group flex h-full flex-col overflow-hidden rounded-2xl p-0 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
     >
       {/* Imagen del evento */}
-      <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-emerald-500/15">
+      <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-emerald-500/15 flex items-center justify-center p-2">
         {imageSrc ? (
           <Image
             src={imageSrc}
@@ -196,7 +196,7 @@ function EnrolledEventCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             unoptimized={isExternalUrl(imageSrc)}
             onError={() => setImageError(true)}
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-contain p-1 transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-primary/60">
