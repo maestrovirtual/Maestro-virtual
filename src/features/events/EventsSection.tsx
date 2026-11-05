@@ -44,6 +44,7 @@ async function fetchEventosReales(): Promise<EventItem[] | undefined> {
       return {
         id: e.id,
         title: e.title,
+        description: e.description || undefined,
         category: (e.category || "general") as EventItem["category"],
         profile: e.profile || "Público en general",
         objective: e.objective || e.description || "",
