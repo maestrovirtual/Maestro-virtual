@@ -97,6 +97,50 @@ describe("Server Action: createEventAction y updateEventAction con Storage", () 
       expect(result.data?.image).toBe(mockPublicUrl);
     });
 
+    it("sube la imagen de patrocinadores y guarda sponsorsImageUrl en Prisma", async () => {
+      const mockSponsorsUrl = "https://supabase.co/storage/v1/object/public/events/sponsors-aliados.png";
+      (uploadEventImage as jest.Mock).mockResolvedValue({
+        url: mockSponsorsUrl,
+        path: "events/sponsors-aliados.png",
+      });
+
+      const mockEvent = {
+        id: "event-sponsors",
+        title: "Taller con Aliados",
+        description: "Detalle del evento",
+        image: "/images/events/default.jpg",
+        sponsorsImageUrl: mockSponsorsUrl,
+        date: new Date("2026-11-20"),
+        time: "10:00 - 12:00 hrs",
+        modality: "ONLINE",
+        category: "general",
+        isActive: true,
+      };
+
+      (prisma.event.create as jest.Mock).mockResolvedValue(mockEvent);
+
+      const formData = new FormData();
+      formData.append("title", "Taller con Aliados");
+      formData.append("description", "Detalle del evento");
+      formData.append("date", "2026-11-20");
+      formData.append("modality", "ONLINE");
+
+      const sponsorsFile = new File(["fake-sponsors-bytes"], "aliados.png", { type: "image/png" });
+      formData.append("sponsorsImage", sponsorsFile);
+
+      const result = await createEventAction(formData);
+
+      expect(uploadEventImage).toHaveBeenCalledWith(sponsorsFile);
+      expect(prisma.event.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Taller con Aliados",
+          sponsorsImageUrl: mockSponsorsUrl,
+        }),
+      });
+      expect(result.success).toBe(true);
+      expect(result.data?.sponsorsImageUrl).toBe(mockSponsorsUrl);
+    });
+
     it("devuelve { success: false, error } cuando la subida de imagen falla en el bloque try/catch", async () => {
       (uploadEventImage as jest.Mock).mockRejectedValue(
         new Error("Fallo de conexión al bucket de Supabase Storage")
