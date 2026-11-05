@@ -26,4 +26,5 @@ export interface EventItem {
   requirements?: string; // Requerido para el participante
   image?: string; // URL de la portada o afiche del evento
   description?: string; // Descripción detallada del evento
+  sponsorsImageUrl?: string; // URL opcional de la imagen de patrocinadores/aliados
 }

@@ -5,6 +5,7 @@ export interface AdminEvent {
   title: string;
   description: string;
   image: string;
+  sponsorsImageUrl?: string | null;
   date: string | Date;
   time?: string | null;
   modality: Modality | "IN_PERSON" | "ONLINE";
