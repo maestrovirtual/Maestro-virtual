@@ -281,15 +281,29 @@ export default function EventDetailModal({
             </div>
 
             {/* DESCRIPCIÓN DEL EVENTO */}
-            {event.description && (
+            {(event.description || event.sponsorsImageUrl) && (
               <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40 p-4 sm:p-5 space-y-2">
                 <div className="flex items-center gap-2 font-semibold text-sm text-gray-900 dark:text-gray-100">
                   <FileText className="h-4 w-4 text-primary shrink-0" />
                   <span>Descripción</span>
                 </div>
-                <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 pl-6 whitespace-pre-wrap">
-                  {event.description}
-                </div>
+                {event.description && (
+                  <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 pl-6 whitespace-pre-wrap">
+                    {event.description}
+                  </div>
+                )}
+                {event.sponsorsImageUrl && (
+                  <div className="pl-6">
+                    <Image
+                      src={event.sponsorsImageUrl}
+                      alt="Patrocinadores y aliados del evento"
+                      width={800}
+                      height={400}
+                      unoptimized={event.sponsorsImageUrl.startsWith("http")}
+                      className="w-full h-auto object-contain rounded-lg mt-4"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
