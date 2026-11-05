@@ -126,6 +126,7 @@ model Event {
   title        String
   description  String
   image        String
+  sponsorsImageUrl String?
   date         DateTime
   time         String?
   modality     Modality

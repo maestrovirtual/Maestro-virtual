@@ -196,4 +196,48 @@ describe('Public EventCard', () => {
     expect(timeValue.className).toContain('text-gray-900');
     expect(timeValue.className).toContain('dark:text-gray-100');
   });
+
+  it('renderiza la imagen de patrocinadores/aliados debajo de la descripción cuando sponsorsImageUrl existe', async () => {
+    const { fireEvent, within } = await import('@testing-library/react');
+
+    const sponsorsUrl = 'https://fqwgfgppvlqgddxvzixu.supabase.co/storage/v1/object/public/events/sponsors-banner.png';
+
+    const eventWithSponsors: EventItem = {
+      id: 'evt-sponsors-modal',
+      title: 'Cumbre de Innovación Educativa',
+      category: 'zoom',
+      profile: 'Líderes educativos',
+      objective: 'Fortalecer alianzas de impacto',
+      description: 'Gran encuentro con ponentes y patrocinadores estratégicos.',
+      sponsorsImageUrl: sponsorsUrl,
+      duration: '4 horas',
+      participants: '200 personas',
+      date: '2026-12-10',
+      time: '09:00 - 13:00 hrs',
+      modality: 'online',
+      platform: 'Zoom',
+    };
+
+    render(<EventCard event={eventWithSponsors} />);
+
+    // Abrir modal
+    const exploreBtn = screen.getByRole('button', { name: /explorar evento/i });
+    fireEvent.click(exploreBtn);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+
+    // Comprobar que el texto de descripción está presente
+    expect(within(dialog).getByText('Gran encuentro con ponentes y patrocinadores estratégicos.')).toBeInTheDocument();
+
+    // Comprobar que la imagen de patrocinadores está presente
+    const sponsorsImg = within(dialog).getByAltText('Patrocinadores y aliados del evento');
+    expect(sponsorsImg).toBeInTheDocument();
+    expect(sponsorsImg).toHaveAttribute('src', sponsorsUrl);
+    expect(sponsorsImg.className).toContain('w-full');
+    expect(sponsorsImg.className).toContain('h-auto');
+    expect(sponsorsImg.className).toContain('object-contain');
+    expect(sponsorsImg.className).toContain('rounded-lg');
+    expect(sponsorsImg.className).toContain('mt-4');
+  });
 });
