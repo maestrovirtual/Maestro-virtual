@@ -10,6 +10,8 @@ export const events: EventItem[] = [
       'Docentes y personal administrativo en escuelas públicas cuya necesidad sea estar frente a un grupo y exponer sobre un tema por medios digitales.',
     objective:
       'Desarrollar habilidades para el uso y manejo de la plataforma Zoom, además de descubrir otras herramientas digitales que mejoren la dinámica con la tecnología.',
+    description:
+      'Taller práctico enfocado en dominar las funciones esenciales y avanzadas de Zoom para entornos educativos:\n\n• Configuración de sesiones seguras y control de accesos.\n• Creación y moderación de salas de grupos pequeños (breakout rooms).\n• Integración de dinámicas interactivas mediante encuestas y pizarra digital.\n• Recomendaciones pedagógicas para fomentar la participación activa del alumnado.',
     duration: '10 sesiones – 2 horas cada sesión',
     participants: '10 – 15 por capacitador',
     date: '2026-08-05',
@@ -27,6 +29,8 @@ export const events: EventItem[] = [
       'Docentes y personal administrativo cuya necesidad sea concentrar información y crear archivos para facilitar el procesamiento de datos en su labor docente.',
     objective:
       'Desarrollar habilidades para el uso de Microsoft Excel y crear una plantilla para el concentrado de listas de asistencia en el aula.',
+    description:
+      'Capacitación integral para dominar las herramientas de cálculo y organización de datos en el ámbito académico:\n\n• Formato de celdas, filtros avanzados y validación de datos.\n• Aplicación de fórmulas clave: BUSCARV, SUMAR.SI, PROMEDIO y SI condicional.\n• Diseño de plantillas automatizadas para control de calificaciones y asistencia.\n• Elaboración de gráficos representativos para informes escolares.',
     duration: '5 sesiones – 2 horas cada sesión',
     participants: '10 – 15 por capacitador',
     date: '2026-08-12',
