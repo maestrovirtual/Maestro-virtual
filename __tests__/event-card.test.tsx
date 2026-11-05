@@ -148,4 +148,52 @@ describe('Public EventCard', () => {
     fireEvent.click(closeBtn);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('renderiza la sección dedicada de Descripción con whitespace-pre-wrap y clases de alto contraste', async () => {
+    const { fireEvent, within } = await import('@testing-library/react');
+
+    const multilineDescription = 'Esta es una descripción detallada:\n• Punto clave 1\n• Punto clave 2\n\n¡Los esperamos!';
+
+    const eventWithDesc: EventItem = {
+      id: 'evt-desc-1',
+      title: 'Taller de Inteligencia Artificial',
+      category: 'canva',
+      profile: 'Profesores universitarios',
+      objective: 'Aprender IA básica',
+      description: multilineDescription,
+      duration: '3 sesiones de 2 horas',
+      participants: '30 cupos',
+      date: '2026-11-25',
+      time: '16:00 - 18:00 hrs',
+      modality: 'online',
+      platform: 'Zoom',
+    };
+
+    render(<EventCard event={eventWithDesc} />);
+
+    // Abrir modal
+    const exploreBtn = screen.getByRole('button', { name: /explorar evento/i });
+    fireEvent.click(exploreBtn);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+
+    // Sección "Descripción" debe existir
+    expect(within(dialog).getByText('Descripción')).toBeInTheDocument();
+
+    // El contenido de la descripción debe estar presente
+    const descContent = within(dialog).getByText(/Esta es una descripción detallada/i);
+    expect(descContent).toBeInTheDocument();
+    expect(descContent.className).toContain('whitespace-pre-wrap');
+
+    // Comprobar clases de contraste de texto
+    const titleEl = within(dialog).getByText('Taller de Inteligencia Artificial');
+    expect(titleEl.className).toContain('text-gray-900');
+    expect(titleEl.className).toContain('dark:text-gray-100');
+
+    // Horario / duración y fecha deben tener clases con contraste explícito
+    const timeValue = within(dialog).getByText(/16:00 - 18:00 hrs/i);
+    expect(timeValue.className).toContain('text-gray-900');
+    expect(timeValue.className).toContain('dark:text-gray-100');
+  });
 });
