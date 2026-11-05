@@ -25,4 +25,5 @@ export interface EventItem {
   platform?: string; // solo si es online
   requirements?: string; // Requerido para el participante
   image?: string; // URL de la portada o afiche del evento
+  description?: string; // Descripción detallada del evento
 }
