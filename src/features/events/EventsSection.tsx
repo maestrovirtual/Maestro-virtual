@@ -45,6 +45,7 @@ async function fetchEventosReales(): Promise<EventItem[] | undefined> {
         id: e.id,
         title: e.title,
         description: e.description || undefined,
+        sponsorsImageUrl: e.sponsorsImageUrl || undefined,
         category: (e.category || "general") as EventItem["category"],
         profile: e.profile || "Público en general",
         objective: e.objective || e.description || "",

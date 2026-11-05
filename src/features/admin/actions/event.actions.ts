@@ -24,10 +24,19 @@ function resolveModality(value: unknown): Modality {
 function parseEventInput(input: FormData | Partial<EventFormData>): {
   data: Partial<EventFormData>;
   imageFile: File | null;
+  sponsorsImageFile: File | null;
 } {
   if (typeof FormData !== "undefined" && input instanceof FormData) {
     const fileEntry = input.get("image");
     const imageFile = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+
+    const sponsorsEntry = input.get("sponsorsImage") || input.get("sponsorsImageUrl");
+    const sponsorsImageFile =
+      sponsorsEntry instanceof File && sponsorsEntry.size > 0 ? sponsorsEntry : null;
+    const sponsorsImageUrlValue =
+      (input.get("sponsorsImageUrl") as string) ||
+      (typeof sponsorsEntry === "string" ? sponsorsEntry : undefined);
+    const hasSponsorsInput = input.has("sponsorsImage") || input.has("sponsorsImageUrl");
 
     const data: Partial<EventFormData> = {
       title: (input.get("title") as string) || undefined,
@@ -37,6 +46,7 @@ function parseEventInput(input: FormData | Partial<EventFormData>): {
       modality: (input.get("modality") as "ONLINE" | "IN_PERSON") || undefined,
       category: (input.get("category") as string) || undefined,
       image: (input.get("imageUrl") as string) || (typeof fileEntry === "string" ? fileEntry : undefined),
+      sponsorsImageUrl: hasSponsorsInput ? sponsorsImageUrlValue || null : undefined,
       platform: (input.get("platform") as string) || null,
       location: (input.get("location") as string) || null,
       address: (input.get("address") as string) || null,
@@ -48,7 +58,7 @@ function parseEventInput(input: FormData | Partial<EventFormData>): {
       isActive: input.has("isActive") ? input.get("isActive") === "true" : true,
     };
 
-    return { data, imageFile };
+    return { data, imageFile, sponsorsImageFile };
   }
 
   const anyInput = input as Record<string, unknown>;
@@ -59,9 +69,17 @@ function parseEventInput(input: FormData | Partial<EventFormData>): {
     imageFile = anyInput.image;
   }
 
+  let sponsorsImageFile: File | null = null;
+  if (anyInput?.sponsorsImageFile instanceof File && anyInput.sponsorsImageFile.size > 0) {
+    sponsorsImageFile = anyInput.sponsorsImageFile;
+  } else if (anyInput?.sponsorsImage instanceof File && anyInput.sponsorsImage.size > 0) {
+    sponsorsImageFile = anyInput.sponsorsImage;
+  }
+
   return {
     data: input as Partial<EventFormData>,
     imageFile,
+    sponsorsImageFile,
   };
 }
 
@@ -89,7 +107,7 @@ export async function createEventAction(
       };
     }
 
-    const { data, imageFile } = parseEventInput(input);
+    const { data, imageFile, sponsorsImageFile } = parseEventInput(input);
 
     if (!data.title?.trim()) {
       return {
@@ -136,6 +154,29 @@ export async function createEventAction(
       }
     }
 
+    // Procesar y subir imagen de patrocinadores si se adjuntó un archivo
+    let finalSponsorsImageUrl: string | null = data.sponsorsImageUrl?.trim() || null;
+    if (sponsorsImageFile) {
+      const validation = validateImageFile(sponsorsImageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen de patrocinadores no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadEventImage(sponsorsImageFile);
+        finalSponsorsImageUrl = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la imagen de patrocinadores al servicio de Storage.";
+        return { success: false, error: message };
+      }
+    }
+
     const modalityValue = resolveModality(data.modality);
 
     const event = await prisma.event.create({
@@ -143,6 +184,7 @@ export async function createEventAction(
         title: data.title.trim(),
         description: data.description?.trim() || "Descripción pendiente",
         image: finalImageUrl,
+        sponsorsImageUrl: finalSponsorsImageUrl,
         date: parsedDate,
         time: data.time ? data.time.trim() : "Por definir",
         modality: modalityValue,
@@ -192,7 +234,7 @@ export async function updateEventAction(
       return { success: false, error: "ID del evento no proporcionado." };
     }
 
-    const { data, imageFile } = parseEventInput(input);
+    const { data, imageFile, sponsorsImageFile } = parseEventInput(input);
 
     if (data.title !== undefined && !data.title.trim()) {
       return { success: false, error: "El título no puede estar vacío." };
@@ -222,6 +264,30 @@ export async function updateEventAction(
       }
     } else if (data.image !== undefined) {
       updatePayload.image = data.image.trim();
+    }
+
+    // Procesar nueva imagen de patrocinadores si se adjuntó archivo
+    if (sponsorsImageFile) {
+      const validation = validateImageFile(sponsorsImageFile);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || "El archivo de imagen de patrocinadores no es válido.",
+        };
+      }
+
+      try {
+        const uploadResult = await uploadEventImage(sponsorsImageFile);
+        updatePayload.sponsorsImageUrl = uploadResult.url;
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Error al subir la imagen de patrocinadores al servicio de Storage.";
+        return { success: false, error: message };
+      }
+    } else if (data.sponsorsImageUrl !== undefined) {
+      updatePayload.sponsorsImageUrl = data.sponsorsImageUrl ? data.sponsorsImageUrl.trim() : null;
     }
 
     if (data.title !== undefined) updatePayload.title = data.title.trim();
