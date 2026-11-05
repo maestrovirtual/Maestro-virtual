@@ -308,7 +308,7 @@ export default function EventCard({
               </h3>
 
               <p className="text-sm leading-6 text-muted-foreground line-clamp-2">
-                {event.objective || (event as unknown as { description?: string }).description || 'Próximamente más información sobre este evento.'}
+                {event.description || event.objective || 'Próximamente más información sobre este evento.'}
               </p>
 
               <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-muted-foreground">
