@@ -56,6 +56,14 @@ export default function EventForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(eventToEdit?.image || null);
 
+  const [sponsorsImageUrl, setSponsorsImageUrl] = useState(
+    eventToEdit?.sponsorsImageUrl || ""
+  );
+  const [sponsorsImageFile, setSponsorsImageFile] = useState<File | null>(null);
+  const [sponsorsPreviewUrl, setSponsorsPreviewUrl] = useState<string | null>(
+    eventToEdit?.sponsorsImageUrl || null
+  );
+
   const [platform, setPlatform] = useState(eventToEdit?.platform || "");
   const [location, setLocation] = useState(eventToEdit?.location || "");
   const [address, setAddress] = useState(eventToEdit?.address || "");
@@ -78,8 +86,11 @@ export default function EventForm({
       if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
+      if (sponsorsPreviewUrl && sponsorsPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(sponsorsPreviewUrl);
+      }
     };
-  }, [previewUrl]);
+  }, [previewUrl, sponsorsPreviewUrl]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,6 +122,38 @@ export default function EventForm({
     setImageFile(null);
     setPreviewUrl(eventToEdit?.image || null);
     setImage(eventToEdit?.image || "/images/events/default.jpg");
+  };
+
+  const handleSponsorsImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo de patrocinadores debe ser una imagen válida (JPG, PNG, WebP o AVIF).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("La imagen de patrocinadores no debe superar los 5MB de tamaño.");
+      return;
+    }
+
+    setError(null);
+    setSponsorsImageFile(file);
+
+    if (sponsorsPreviewUrl && sponsorsPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(sponsorsPreviewUrl);
+    }
+    setSponsorsPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleRemoveSponsorsImage = () => {
+    if (sponsorsPreviewUrl && sponsorsPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(sponsorsPreviewUrl);
+    }
+    setSponsorsImageFile(null);
+    setSponsorsPreviewUrl(null);
+    setSponsorsImageUrl("");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -157,6 +200,12 @@ export default function EventForm({
       formData.append("imageUrl", image);
     }
 
+    if (sponsorsImageFile) {
+      formData.append("sponsorsImage", sponsorsImageFile);
+    } else if (sponsorsImageUrl) {
+      formData.append("sponsorsImageUrl", sponsorsImageUrl);
+    }
+
     Object.assign(formData, {
       title: title.trim(),
       description: description.trim(),
@@ -165,6 +214,8 @@ export default function EventForm({
       modality,
       category: category.trim() || "general",
       image: imageFile ? imageFile.name : image,
+      sponsorsImage: sponsorsImageFile ? sponsorsImageFile.name : sponsorsImageUrl,
+      sponsorsImageUrl: sponsorsImageFile ? sponsorsImageFile.name : sponsorsImageUrl,
       isActive,
     });
 
@@ -334,6 +385,81 @@ export default function EventForm({
                     ) : (
                       <span>Formatos admitidos: JPG, PNG, WebP o AVIF. Tamaño máximo: 5MB.</span>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* CAMPO DE SUBIDA DE IMAGEN DE PATROCINADORES / EXTRA */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-text-primary">
+                  Imagen de Patrocinadores / Extra
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed border-border bg-slate-50/60 p-4 dark:bg-slate-900/30">
+                  {/* Vista previa */}
+                  {sponsorsPreviewUrl ? (
+                    <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg border border-border bg-slate-100 shadow-xs dark:bg-slate-800">
+                      <Image
+                        src={sponsorsPreviewUrl}
+                        alt="Vista previa de patrocinadores"
+                        fill
+                        unoptimized
+                        className="h-full w-full object-contain p-1"
+                      />
+                      {sponsorsImageFile && (
+                        <span className="absolute bottom-1 right-1 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                          Nueva
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-24 w-36 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-slate-100 text-slate-400 dark:bg-slate-800">
+                      <ImageIcon size={26} />
+                      <span className="mt-1 text-[11px] font-medium">Sin imagen</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label
+                        htmlFor="eventform-sponsors-file"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-xs font-semibold text-text-primary shadow-xs transition-colors hover:bg-slate-50 hover:text-primary dark:bg-slate-800 dark:hover:bg-slate-700"
+                      >
+                        <Upload size={14} />
+                        <span>{sponsorsPreviewUrl ? "Cambiar imagen" : "Subir imagen"}</span>
+                      </label>
+                      <input
+                        id="eventform-sponsors-file"
+                        name="sponsorsImage"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSponsorsImageChange}
+                        className="sr-only"
+                      />
+
+                      {(sponsorsImageFile || sponsorsPreviewUrl) && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveSponsorsImage}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
+                        >
+                          <Trash2 size={13} />
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="text-[11px] text-text-secondary">
+                      {sponsorsImageFile ? (
+                        <span className="font-medium text-primary">
+                          Archivo seleccionado: {sponsorsImageFile.name} ({(sponsorsImageFile.size / 1024).toFixed(0)} KB)
+                        </span>
+                      ) : sponsorsPreviewUrl ? (
+                        <span>Banner o imagen de patrocinadores asignada actualmente.</span>
+                      ) : (
+                        <span>Banner opcional de patrocinadores o aliados. Formatos: JPG, PNG, WebP o AVIF (hasta 5MB).</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

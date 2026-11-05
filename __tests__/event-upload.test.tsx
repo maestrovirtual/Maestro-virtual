@@ -149,6 +149,69 @@ describe('Subida de Archivos y Portadas para Eventos (Refactorización MV-32)', 
         expect(handleSaved).toHaveBeenCalledWith(mockResultEvent);
       });
     });
+
+    it('renderiza un segundo input file para patrocinadores y lo adjunta en el FormData', async () => {
+      const mockResultEvent = {
+        id: 'new-id-2',
+        title: 'Taller con Patrocinadores',
+        description: 'Descripción con aliados',
+        date: new Date('2026-11-20'),
+        time: '10:00 - 12:00 hrs',
+        modality: 'ONLINE',
+        category: 'general',
+        image: '/images/events/default.jpg',
+        sponsorsImageUrl: 'https://supabase.co/sponsors.png',
+        isActive: true,
+      };
+
+      (createEventAction as jest.Mock).mockResolvedValue({
+        success: true,
+        data: mockResultEvent,
+      });
+
+      render(
+        <EventModal
+          isOpen={true}
+          eventToEdit={null}
+          onClose={jest.fn()}
+          onSaved={jest.fn()}
+        />
+      );
+
+      // Comprobar que existe la etiqueta e input de patrocinadores
+      expect(screen.getByText(/Imagen de Patrocinadores \/ Extra/i)).toBeInTheDocument();
+      const sponsorsInput = document.querySelector('input[name="sponsorsImage"]') as HTMLInputElement;
+      expect(sponsorsInput).not.toBeNull();
+      expect(sponsorsInput).toHaveAttribute('accept', 'image/*');
+
+      // Seleccionar archivo de patrocinadores
+      const sponsorsFile = new File(['sponsors-bytes'], 'aliados.png', { type: 'image/png' });
+      fireEvent.change(sponsorsInput, { target: { files: [sponsorsFile] } });
+
+      expect(URL.createObjectURL).toHaveBeenCalledWith(sponsorsFile);
+      expect(screen.getByText(/Archivo seleccionado: aliados\.png/i)).toBeInTheDocument();
+
+      // Completar campos obligatorios
+      fireEvent.change(screen.getByPlaceholderText(/Ej\. Taller de Inteligencia Artificial/i), {
+        target: { value: 'Taller con Patrocinadores' },
+      });
+      fireEvent.change(screen.getByPlaceholderText(/Describe de qué trata el evento/i), {
+        target: { value: 'Descripción con aliados' },
+      });
+      fireEvent.change(document.querySelector('input[type="date"]')!, {
+        target: { value: '2026-12-01' },
+      });
+
+      // Guardar
+      fireEvent.click(screen.getByRole('button', { name: /guardar evento/i }));
+
+      await waitFor(() => {
+        expect(createEventAction).toHaveBeenCalledTimes(1);
+        const passedArg = (createEventAction as jest.Mock).mock.calls[0][0];
+        expect(passedArg).toBeInstanceOf(FormData);
+        expect(passedArg.get('sponsorsImage')).toBe(sponsorsFile);
+      });
+    });
   });
 
   describe('Validaciones de Storage (validateImageFile)', () => {
