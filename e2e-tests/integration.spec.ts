@@ -56,7 +56,7 @@ test.describe('Tarea 28: Pruebas de integración Frontend-Backend', () => {
 
     await page.getByLabel('Nombre:', { exact: true }).fill('Usuario Prueba Integración');
     await page.getByLabel('De:', { exact: true }).fill('prueba.integracion@gmail.com');
-    await page.getByLabel('Asunto:', { exact: true }).fill('Prueba automatizada de contacto');
+    await page.locator('label', { hasText: 'Cursos' }).click();
     await page.getByLabel('Mensaje:', { exact: true }).fill('Mensaje de prueba de integración automatizada.');
     await expect(page.locator('input[name="website"]')).toHaveValue('');
 

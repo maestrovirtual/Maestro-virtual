@@ -76,7 +76,7 @@ describe('Confirmación de recepción del contacto', () => {
     const view = render(<ContactSection />);
     fireEvent.change(screen.getByLabelText(/^Nombre:/i), { target: { value: 'Ana' } });
     fireEvent.change(screen.getByLabelText(/^De:/i), { target: { value: 'ana@gmail.com' } });
-    fireEvent.change(screen.getByLabelText(/^Asunto:/i), { target: { value: 'Prueba MV34' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Cursos' }));
     fireEvent.change(screen.getByLabelText(/^Mensaje:/i), { target: { value: 'Información de los cursos' } });
     fireEvent.submit(view.container.querySelector('form')!);
     return view;
@@ -87,7 +87,7 @@ describe('Confirmación de recepción del contacto', () => {
     global.fetch = fetchMock;
     fillAndSubmit();
     expect(await screen.findByRole('button', { name: /Redactar otro mensaje/i })).toBeInTheDocument();
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ name: 'Ana', email: 'ana@gmail.com', subject: 'Prueba MV34', message: 'Información de los cursos', website: '' });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ name: 'Ana', email: 'ana@gmail.com', category: 'CURSOS', message: 'Información de los cursos', website: '' });
   });
 
   it('no muestra éxito cuando el filtro antispam descartó el mensaje', async () => {
@@ -96,5 +96,16 @@ describe('Confirmación de recepción del contacto', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo registrar el mensaje');
     expect(screen.queryByRole('button', { name: /Redactar otro mensaje/i })).not.toBeInTheDocument();
     expect(container.querySelector('input[name="website"]')?.parentElement).toHaveAttribute('hidden');
+  });
+});
+describe('Categorías del asunto', () => {
+  it('permite elegir solo una categoría a la vez', () => {
+    render(<ContactSection />);
+    const radios = screen.getAllByRole('radio');
+    expect(radios.map(radio => radio.getAttribute('value'))).toEqual(['CURSOS', 'INSCRIPCIONES', 'EVENTOS', 'SOPORTE', 'OTRO']);
+    fireEvent.click(screen.getByRole('radio', { name: 'Cursos' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Eventos' }));
+    expect(screen.getByRole('radio', { name: 'Eventos' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Cursos' })).not.toBeChecked();
   });
 });

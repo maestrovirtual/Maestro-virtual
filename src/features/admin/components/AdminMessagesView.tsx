@@ -4,22 +4,39 @@ import { useCallback, useEffect, useState } from "react";
 import GmailConnection from "./GmailConnection";
 import ContactReplyWorkspace from "./ContactReplyWorkspace";
 import { useLocale } from "next-intl";
-import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Forward, Inbox as InboxIcon, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import { CONTACT_CATEGORIES, contactCategoryLabel, type ContactCategory } from "@/lib/contact/categories";
+import { CATEGORY_ICONS } from "@/features/contact/categoryIcons";
+import { Archive, ArchiveRestore, ArrowDownWideNarrow, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Inbox as InboxIcon, LayoutGrid, Mail, MailOpen, RefreshCw, ShieldAlert, ShieldCheck, Tag, Trash2 } from "lucide-react";
 
 type ContactMessage = {
   _count?: { replies: number };
-  id: string; name: string; email: string; subject: string;
+  id: string; name: string; email: string; subject: string; category: ContactCategory;
   message: string; date: string; lastActivityAt?: string; isRead: boolean; isArchived: boolean; isSpam: boolean;
 };
 type Folder = "inbox" | "archived" | "spam";
-type Inbox = { messages: ContactMessage[]; total: number; page: number; pageSize: number; unreadCounts: Record<Folder, number>; mailProvider?: string };
+type CategoryFilter = "ALL" | ContactCategory;
+const FOLDERS: Folder[] = ["inbox", "archived", "spam"];
+const CATEGORY_FILTERS: CategoryFilter[] = ["ALL", ...CONTACT_CATEGORIES.map(category => category.value)];
+const folderLabel = (folder: Folder) => folder === "inbox" ? "Bandeja de entrada" : folder === "spam" ? "Spam" : "Archivados";
+function FolderIcon({ folder, size }: { folder: Folder; size: number }) {
+  if (folder === "inbox") return <InboxIcon size={size} aria-hidden="true" />;
+  if (folder === "spam") return <ShieldAlert size={size} aria-hidden="true" />;
+  return <Archive size={size} aria-hidden="true" />;
+}
+function CategoryIcon({ category, size }: { category: CategoryFilter; size: number }) {
+  const Icon = category === "ALL" ? LayoutGrid : CATEGORY_ICONS[category];
+  return <Icon size={size} aria-hidden="true" />;
+}
+type Inbox = { messages: ContactMessage[]; total: number; page: number; pageSize: number; unreadCounts: Record<Folder, number>; categoryUnreadCounts?: Record<ContactCategory, number>; mailProvider?: string };
 
 export default function AdminMessagesView() {
   const locale = useLocale();
   const [mailProvider, setMailProvider] = useState("");
   const [mailSyncVersion, setMailSyncVersion] = useState(0);
   const [view, setView] = useState<Folder>("inbox");
+  const [category, setCategory] = useState<CategoryFilter>("ALL");
   const [unreadCounts, setUnreadCounts] = useState<Record<Folder, number> | null>(null);
+  const [categoryUnreadCounts, setCategoryUnreadCounts] = useState<Record<ContactCategory, number> | null>(null);
   const [notice, setNotice] = useState("");
   const [page, setPage] = useState(1);
   const [inbox, setInbox] = useState<Inbox | null>(null);
@@ -32,7 +49,7 @@ export default function AdminMessagesView() {
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await fetch(`/api/admin/messages?page=${page}&view=${view}`, { cache: "no-store", signal });
+      const response = await fetch(`/api/admin/messages?page=${page}&view=${view}${category === "ALL" ? "" : `&category=${category}`}`, { cache: "no-store", signal });
       if (!response.ok) throw new Error(response.status === 401 || response.status === 403
         ? "Tu sesión terminó o no tienes acceso. Vuelve a iniciar sesión."
         : "No se pudieron cargar los mensajes. Intenta de nuevo.");
@@ -42,13 +59,14 @@ export default function AdminMessagesView() {
         setMailProvider(data.mailProvider || "resend");
         setError("");
         setUnreadCounts(data.unreadCounts);
+        setCategoryUnreadCounts(data.categoryUnreadCounts ?? null);
       }
     } catch (err) {
       if (!signal?.aborted) setError(err instanceof Error ? err.message : "Error al cargar mensajes.");
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [page, view]);
+  }, [page, view, category]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,6 +120,18 @@ export default function AdminMessagesView() {
     setPage(1);
     setInbox(null);
     setView(nextView);
+  }
+
+  function changeCategory(nextCategory: CategoryFilter) {
+    if (category === nextCategory) return;
+    setLoading(true);
+    setError("");
+    setNotice("");
+    setSelectedId(null);
+    setSelectedForDelete(new Set());
+    setPage(1);
+    setInbox(null);
+    setCategory(nextCategory);
   }
 
   function toggleSelectForDelete(id: string) {
@@ -169,19 +199,6 @@ export default function AdminMessagesView() {
     } finally { setPendingId(null); }
   }
 
-  async function forwardMessage(message: ContactMessage) {
-    setPendingId(message.id);
-    setError("");
-    setNotice("");
-    try {
-      const response = await fetch(`/api/admin/messages/${encodeURIComponent(message.id)}/forward`, { method: "POST" });
-      if (!response.ok) throw new Error("No se pudo reenviar el mensaje. Intenta de nuevo.");
-      setNotice("Mensaje reenviado a Maestro Virtual.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo reenviar el mensaje.");
-    } finally { setPendingId(null); }
-  }
-
   async function toggleRead(message: ContactMessage) {
     setPendingId(message.id);
     setError("");
@@ -192,8 +209,11 @@ export default function AdminMessagesView() {
       });
       if (!response.ok) throw new Error("No se pudo cambiar el estado. Intenta de nuevo.");
       const updated: { isRead: boolean } = await response.json();
-      setUnreadCounts(current => current && ({ ...current,
-        [view]: Math.max(0, current[view] + (updated.isRead === message.isRead ? 0 : updated.isRead ? -1 : 1)),
+      // El mensaje cuenta tanto en su carpeta como en su categoría dentro de ella.
+      const delta = updated.isRead === message.isRead ? 0 : updated.isRead ? -1 : 1;
+      setUnreadCounts(current => current && ({ ...current, [view]: Math.max(0, current[view] + delta) }));
+      setCategoryUnreadCounts(current => current && ({ ...current,
+        [message.category]: Math.max(0, (current[message.category] ?? 0) + delta),
       }));
       setInbox(current => current && ({ ...current, messages: current.messages.map(item =>
         item.id === message.id ? { ...item, isRead: updated.isRead } : item) }));
@@ -219,7 +239,14 @@ export default function AdminMessagesView() {
       </div>
       {mailProvider === "gmail" && <GmailConnection onSynced={onMailSynced} paused={loading || pendingId !== null} />}
       <nav aria-label="Carpetas de mensajes" className="mb-5 flex w-fit max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        {(["inbox", "archived", "spam"] as const).map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}>{folder === "inbox" ? <InboxIcon size={16} aria-hidden="true" /> : folder === "spam" ? <ShieldAlert size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}{folder === "inbox" ? "Bandeja de entrada" : folder === "spam" ? "Spam" : "Archivados"}{!!unreadCounts?.[folder] && <span aria-label={`${unreadCounts[folder]} sin leer`} className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none tabular-nums text-white">{unreadCounts[folder]}</span>}</button>)}
+        {FOLDERS.map(folder => <button key={folder} aria-current={view === folder ? "page" : undefined} disabled={loading || pendingId !== null} onClick={() => changeView(folder)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 ${view === folder ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"}`}><FolderIcon folder={folder} size={16} />{folderLabel(folder)}{!!unreadCounts?.[folder] && <span aria-label={`${unreadCounts[folder]} sin leer`} className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none tabular-nums text-white">{unreadCounts[folder]}</span>}</button>)}
+      </nav>
+      <nav aria-label="Filtrar por asunto" className="mb-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {CATEGORY_FILTERS.map(filter => {
+          const active = category === filter;
+          const unread = filter === "ALL" ? 0 : categoryUnreadCounts?.[filter] ?? 0;
+          return <button key={filter} aria-pressed={active} disabled={loading || pendingId !== null} onClick={() => changeCategory(filter)} className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 ${active ? "border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><CategoryIcon category={filter} size={14} />{filter === "ALL" ? "Todos" : contactCategoryLabel(filter)}{unread > 0 && <span aria-label={`${unread} sin leer`} className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none tabular-nums ${active ? "bg-white text-blue-700" : "bg-blue-100 text-blue-700"}`}>{unread}</span>}</button>;
+        })}
       </nav>
       {view === "spam" && <p className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">El filtro automático puede equivocarse. Revisa los mensajes y usa <strong>No es spam</strong> para recuperar los legítimos.</p>}
       {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
@@ -227,8 +254,8 @@ export default function AdminMessagesView() {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.12)]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{view === "inbox" ? <InboxIcon size={18} aria-hidden="true" /> : view === "spam" ? <ShieldAlert size={18} aria-hidden="true" /> : <Archive size={18} aria-hidden="true" />}</div>
-            <h2 className="text-sm font-semibold text-slate-900">{view === "inbox" ? "Bandeja de entrada" : view === "spam" ? "Spam" : "Mensajes archivados"}</h2>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><FolderIcon folder={view} size={18} /></div>
+            <h2 className="text-sm font-semibold text-slate-900">{view === "archived" ? "Mensajes archivados" : folderLabel(view)}{category !== "ALL" && <span className="font-normal text-slate-400"> · {contactCategoryLabel(category)}</span>}</h2>
             {inbox && <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500">{inbox.total}</span>}
           </div>
           {selectedForDelete.size > 0 ? (
@@ -247,8 +274,8 @@ export default function AdminMessagesView() {
                   <div className="flex h-16 w-16 -rotate-6 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-500 shadow-sm"><Mail size={30} strokeWidth={1.5} aria-hidden="true" /></div>
                   <div className="absolute right-0 bottom-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-emerald-100 text-emerald-600"><CheckCheck size={15} aria-hidden="true" /></div>
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{inbox.total === 0 ? (view === "spam" ? "Tu carpeta de spam está vacía" : view === "archived" ? "No tienes mensajes archivados" : "Todo listo para tu primer mensaje") : "No hay mensajes en esta página"}</h3>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (view === "spam" ? "Aquí se conservan los mensajes detectados como sospechosos o marcados como spam por el staff. Usa No es spam para devolverlos a la bandeja." : view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">{inbox.total === 0 ? (category !== "ALL" ? `Sin mensajes de ${contactCategoryLabel(category).toLowerCase()}` : view === "spam" ? "Tu carpeta de spam está vacía" : view === "archived" ? "No tienes mensajes archivados" : "Todo listo para tu primer mensaje") : "No hay mensajes en esta página"}</h3>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{inbox.total === 0 ? (category !== "ALL" ? `No hay mensajes con este asunto en ${folderLabel(view).toLowerCase()}. Elige Todos para ver el resto.` : view === "spam" ? "Aquí se conservan los mensajes detectados como sospechosos o marcados como spam por el staff. Usa No es spam para devolverlos a la bandeja." : view === "archived" ? "Los mensajes que archives se conservarán aquí. Puedes devolverlos a la bandeja cuando lo necesites." : "Cuando alguien te escriba desde el formulario de contacto, su mensaje aparecerá aquí.") : "Regresa a la página anterior para consultar los mensajes recibidos."}</p>
                 <p className="mt-7 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2 text-xs text-slate-400"><MailOpen size={14} aria-hidden="true" />{inbox.total} mensajes {view === "archived" ? "archivados" : view === "spam" ? "en spam" : "en la bandeja"}</p>
               </div>
             ) : (
@@ -272,7 +299,7 @@ export default function AdminMessagesView() {
                           <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${message.isRead ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-700"}`} aria-hidden="true">{message.name.trim().charAt(0).toUpperCase()}</span>
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1"><span className="text-sm font-semibold text-slate-800">{message.name}</span><time dateTime={message.lastActivityAt || message.date} className="text-xs font-normal text-slate-400">{formatDate(message.lastActivityAt || message.date)}</time></span>
-                            <span className={`mt-1 block truncate text-sm ${message.isRead ? "text-slate-600" : "font-semibold text-slate-900"}`}>{message.subject || "Sin asunto"}</span>
+                            <span className="mt-1 flex min-w-0 items-center gap-2"><span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700"><Tag size={11} aria-hidden="true" />{contactCategoryLabel(message.category)}</span><span className={`truncate text-sm ${message.isRead ? "text-slate-600" : "font-semibold text-slate-900"}`}>{message.subject || "Sin asunto"}</span></span>
                             <span className="mt-1 block truncate text-xs leading-5 text-slate-400">{message.email}</span>
                             <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><span className={`h-1.5 w-1.5 rounded-full ${message.isRead ? "bg-slate-300" : "bg-blue-500"}`} />{message.isRead ? "Leído" : "No leído"}</span>{!!message._count?.replies && <span className="ml-3 text-[11px] font-medium text-emerald-700">Respondido · {message._count.replies}</span>}
                           </span>
@@ -282,8 +309,7 @@ export default function AdminMessagesView() {
                       </div>
                       {isSelected && <div id={`message-${message.id}`} className="mx-4 mb-5 rounded-xl border border-slate-200 bg-white p-5 sm:ml-20 sm:mr-6 sm:p-6"><ContactReplyWorkspace autoOpen={!!message._count?.replies} refreshVersion={mailSyncVersion} message={message} onSent={() => void load()} onBusyChange={busy => setPendingId(busy ? message.id : null)} /></div>}
                       <div className="flex flex-wrap justify-end gap-2 px-5 pb-4 sm:px-7">{view !== "spam" && <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isArchived: !message.isArchived }, message.isArchived ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje archivado. Puedes recuperarlo en Archivados.")}>{view === "archived" ? <ArchiveRestore size={14} aria-hidden="true" /> : <Archive size={14} aria-hidden="true" />}{view === "archived" ? "Devolver a la bandeja" : "Archivar"}</button>}
-                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button>
-                      <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void forwardMessage(message)}><Forward size={14} aria-hidden="true" />Reenviar a Maestro Virtual</button></div>
+                        <button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-amber-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void moveMessage(message, { isSpam: !message.isSpam }, message.isSpam ? "Mensaje devuelto a la bandeja de entrada." : "Mensaje movido a Spam. Puedes recuperarlo con No es spam.")}>{view === "spam" ? <ShieldCheck size={14} aria-hidden="true" /> : <ShieldAlert size={14} aria-hidden="true" />}{view === "spam" ? "No es spam" : "Marcar como spam"}</button><button className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-40" disabled={pendingId !== null} onClick={() => void toggleRead(message)}>{message.isRead ? <Mail size={14} aria-hidden="true" /> : <CheckCheck size={14} aria-hidden="true" />}{pendingId === message.id ? "Guardando…" : message.isRead ? "Marcar como no leído" : "Marcar como leído"}</button></div>
                     </li>
                   );
                 })}

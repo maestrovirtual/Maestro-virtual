@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Send, FileText, MessageSquare, User } from 'lucide-react';
+import { Mail, Send, Tag, MessageSquare, User } from 'lucide-react';
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaTiktok } from 'react-icons/fa6';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
+import { CONTACT_CATEGORIES } from '@/lib/contact/categories';
+import { CATEGORY_ICONS } from './categoryIcons';
 
 export default function ContactSection() {
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '', website: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', category: '', message: '', website: '' });
   const [isSending, setIsSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function ContactSection() {
         throw new Error(data?.error ?? 'No se pudo registrar el mensaje. Recarga la página e intenta de nuevo.');
       }
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '', website: '' });
+      setFormData({ name: '', email: '', category: '', message: '', website: '' });
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -128,10 +130,31 @@ export default function ContactSection() {
                 <input type="email" id="email" name="email" required value={formData.email} onChange={handleChange} placeholder="tu-correo@ejemplo.com" className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary py-1" />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border/60 pb-2 focus-within:border-blue-500 transition-colors">
-                <label htmlFor="subject" className="text-sm font-semibold text-muted-foreground w-20 flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Asunto:</label>
-                <input type="text" id="subject" name="subject" required value={formData.subject} onChange={handleChange} placeholder="Motivo de tu mensaje" className="flex-1 bg-transparent border-none outline-none text-sm text-text-primary py-1" />
-              </div>
+              <fieldset className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border/60 pb-2 focus-within:border-blue-500 transition-colors">
+                <legend className="sr-only">Asunto: categoría de tu mensaje</legend>
+                <span aria-hidden="true" className="text-sm font-semibold text-muted-foreground w-20 shrink-0 flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Asunto:</span>
+                {/* Una sola fila: si no cabe, se desliza de lado en lugar de partirse. */}
+                <div className="flex flex-1 gap-1.5 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {CONTACT_CATEGORIES.map((category) => {
+                    const Icon = CATEGORY_ICONS[category.value];
+                    const checked = formData.category === category.value;
+                    return (
+                      <label
+                        key={category.value}
+                        className={`inline-flex shrink-0 cursor-pointer select-none items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 ${
+                          checked
+                            ? 'bg-blue-700 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                        }`}
+                      >
+                        <input type="radio" name="category" value={category.value} required checked={checked} onChange={handleChange} className="sr-only" />
+                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        {category.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
               <div className="flex flex-col gap-2 pt-2">
                 <label htmlFor="message" className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Mensaje:</label>
