@@ -69,7 +69,7 @@ function buildHtml(payload: ContactEmailPayload): string {
                     </tr>
                     <tr>
                       <td style="padding:14px 18px;background-color:#f8fafc;">
-                        <p style="margin:0;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;">Asunto</p>
+                        <p style="margin:0;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;">Categoría</p>
                         <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#0f172a;">${subject}</p>
                       </td>
                     </tr>
@@ -109,7 +109,7 @@ export async function sendContactEmail(payload: ContactEmailPayload) {
     from: process.env.MAIL_FROM?.trim() || "onboarding@resend.dev",
     to: process.env.CONTACT_EMAIL!,
     replyTo: payload.email,
-    subject: `[Maestro Virtual] ${payload.subject}`,
+    subject: `[Maestro Virtual · ${payload.subject}] Mensaje de ${payload.name}`,
     html: buildHtml(payload),
   });
 }

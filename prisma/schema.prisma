@@ -159,11 +159,20 @@ model Enrollment {
   event     Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
 }
 
+enum ContactCategory {
+  CURSOS
+  INSCRIPCIONES
+  EVENTOS
+  SOPORTE
+  OTRO
+}
+
 model ContactMessage {
   id        String   @id @default(uuid())
   name      String
   email     String
   subject   String   @default("")
+  category  ContactCategory @default(OTRO)
   message   String
   isRead    Boolean  @default(false)
   isArchived Boolean @default(false)
@@ -174,6 +183,7 @@ model ContactMessage {
   replies ContactReply[]
 
   @@index([isSpam, isArchived, lastActivityAt, id])
+  @@index([category, isSpam, isArchived, lastActivityAt, id])
 }
 
 

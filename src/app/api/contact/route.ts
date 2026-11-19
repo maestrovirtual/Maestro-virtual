@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isLikelyContactSpam } from "@/lib/contact/spam";
+import { contactCategoryLabel, isContactCategory } from "@/lib/contact/categories";
 import prisma from "@/lib/prisma/client";
 import { resolveMx } from "node:dns/promises";
 import { sendContactEmail } from "@/services/mail/sendContactEmail";
@@ -8,7 +9,6 @@ export const runtime = "nodejs";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NAME = 120;
-const MAX_SUBJECT = 200;
 const MAX_MESSAGE = 5000;
 
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, email, subject, message, website } = (body ?? {}) as Record<string, unknown>;
+  const { name, email, category, message, website } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof website === "string" && website.trim() !== "") {
     return NextResponse.json({ success: true, id: "skipped" });
@@ -83,7 +83,6 @@ export async function POST(request: Request) {
   if (
     typeof name !== "string" ||
     typeof email !== "string" ||
-    typeof subject !== "string" ||
     typeof message !== "string"
   ) {
     return NextResponse.json(
@@ -94,19 +93,26 @@ export async function POST(request: Request) {
 
   const nameTrim = name.trim();
   const emailTrim = email.trim();
-  const subjectTrim = subject.trim();
   const messageTrim = message.trim();
 
-  if (!nameTrim || !emailTrim || !subjectTrim || !messageTrim) {
+  if (!nameTrim || !emailTrim || !messageTrim) {
     return NextResponse.json(
       { success: false, error: "Todos los campos son obligatorios" },
       { status: 400 }
     );
   }
 
+  if (!isContactCategory(category)) {
+    return NextResponse.json(
+      { success: false, error: "Selecciona una categoría válida" },
+      { status: 400 }
+    );
+  }
+  // El asunto se deriva de la categoría para conservar el hilo de respuestas.
+  const subjectTrim = contactCategoryLabel(category);
+
   if (
     nameTrim.length > MAX_NAME ||
-    subjectTrim.length > MAX_SUBJECT ||
     messageTrim.length > MAX_MESSAGE
   ) {
     return NextResponse.json(
@@ -117,11 +123,10 @@ export async function POST(request: Request) {
 
   if (
     hasHeaderInjection(nameTrim) ||
-    hasHeaderInjection(emailTrim) ||
-    hasHeaderInjection(subjectTrim)
+    hasHeaderInjection(emailTrim)
   ) {
     return NextResponse.json(
-      { success: false, error: "Contenido inválido en nombre, correo o asunto" },
+      { success: false, error: "Contenido inválido en nombre o correo" },
       { status: 400 }
     );
   }
@@ -152,7 +157,7 @@ export async function POST(request: Request) {
   try {
     const isSpam = isLikelyContactSpam({ subject: subjectTrim, message: messageTrim });
     const saved = await prisma.contactMessage.create({
-      data: { name: nameTrim, email: emailTrim, subject: subjectTrim, message: messageTrim, isSpam },
+      data: { name: nameTrim, email: emailTrim, subject: subjectTrim, category, message: messageTrim, isSpam },
     });
 
     // Una falla en la notificación no debe perder un mensaje ya recibido
