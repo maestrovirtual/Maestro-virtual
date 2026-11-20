@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <Script
           id="splash-prehide"
