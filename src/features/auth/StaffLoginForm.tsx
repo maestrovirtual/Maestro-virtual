@@ -58,6 +58,7 @@ export default function StaffLoginForm({ locale }: { locale: string }) {
           width={144}
           height={44}
           priority={true}
+          style={{ width: "144px", height: "auto" }}
           className="object-contain"
         />
         <div>

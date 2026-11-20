@@ -75,7 +75,7 @@ export const Experience: React.FC = () => {
   return (
     <section className="px-4 md:px-8 max-w-6xl mx-auto w-full flex flex-col gap-16 py-12">
       <div>
-        <h2 className="font-heading text-4xl md:text-5xl text-brand-green mb-8">
+        <h2 className="font-heading text-4xl md:text-5xl text-brand-green-dark mb-8">
           Experiencias y Responsables
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -92,7 +92,7 @@ export const Experience: React.FC = () => {
 
       <div>
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h3 className="font-heading text-3xl md:text-4xl text-brand-green text-center md:text-left">
+          <h3 className="font-heading text-3xl md:text-4xl text-brand-green-dark text-center md:text-left">
             Nuestra labor en acción
           </h3>
           <div className="flex gap-4">
