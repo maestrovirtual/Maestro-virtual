@@ -8,7 +8,7 @@ jest.mock('node:dns/promises', () => ({ resolveMx: jest.fn() }));
 jest.mock('@/services/mail/sendContactEmail', () => ({ sendContactEmail: jest.fn() }));
 jest.mock('@/lib/prisma/client', () => ({ __esModule: true, default: { contactMessage: { create: jest.fn() } } }));
 let ip = 0;
-const payload = { name: ' Ana ', email: 'ana@example.com', subject: ' Curso ', message: ' Quiero información ' };
+const payload = { name: ' Ana ', email: 'ana@example.com', category: 'CURSOS', message: ' Quiero información ' };
 const request = (body: unknown = payload) => new Request('http://localhost/api/contact', {
   method: 'POST', headers: { 'x-real-ip': `test-${ip++}` }, body: JSON.stringify(body),
 });
@@ -21,7 +21,7 @@ beforeEach(() => {
 test('stores the normalized message before sending notification', async () => {
   const response = await POST(request());
   expect(await response.json()).toEqual({ success: true, id: 'saved', notificationSent: true });
-  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: { name: 'Ana', email: 'ana@example.com', subject: 'Curso', message: 'Quiero información', isSpam: false } });
+  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: { name: 'Ana', email: 'ana@example.com', subject: 'Cursos', category: 'CURSOS', message: 'Quiero información', isSpam: false } });
   expect((prisma.contactMessage.create as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan((sendContactEmail as jest.Mock).mock.invocationCallOrder[0]);
 });
 test.each(['returned', 'thrown'])('retains a received message when notification fails (%s)', async mode => {
@@ -46,9 +46,19 @@ test('does not store honeypot submissions', async () => {
 });
 
 test('stores suspicious content directly in spam without sending notification', async () => {
-  const response = await POST(request({ ...payload, subject: 'Ganaste un premio', message: 'Reclama ahora, haz clic https://example.com/premio' }));
+  const response = await POST(request({ ...payload, message: 'Ganaste un premio. Reclama ahora, haz clic https://example.com/premio' }));
   expect(response.status).toBe(200);
   expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: expect.objectContaining({ isSpam: true }) });
   expect(sendContactEmail).not.toHaveBeenCalled();
   expect(await response.json()).toEqual({ success: true, id: 'saved', notificationSent: false });
+});
+
+test.each([undefined, '', 'PAGOS', 'cursos'])('rejects a missing or unknown category %j', async category => {
+  const response = await POST(request({ ...payload, category }));
+  expect(response.status).toBe(400);
+  expect(prisma.contactMessage.create).not.toHaveBeenCalled();
+});
+test('stores spam with the category the visitor selected', async () => {
+  await POST(request({ ...payload, category: 'EVENTOS', message: 'Ganaste un premio. Reclama ahora, haz clic https://example.com/premio' }));
+  expect(prisma.contactMessage.create).toHaveBeenCalledWith({ data: expect.objectContaining({ category: 'EVENTOS', isSpam: true }) });
 });

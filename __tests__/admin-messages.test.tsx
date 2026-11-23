@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import '@testing-library/jest-dom';
 import AdminMessagesView from '@/features/admin/components/AdminMessagesView';
 jest.mock('next-intl', () => ({ useLocale: () => 'es' }));
-const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', message: 'Información sobre cursos', isRead: false, isArchived: false, isSpam: false, date: '2026-10-14T12:00:00Z' };
+const message = { id: 'one', name: 'Ana', email: 'ana@example.com', subject: 'Consulta', category: 'CURSOS', message: 'Información sobre cursos', isRead: false, isArchived: false, isSpam: false, date: '2026-10-14T12:00:00Z' };
 const fetchMock = jest.fn();
 beforeEach(() => {
   fetchMock.mockReset();
@@ -133,4 +133,25 @@ test('refreshes arrivals and unread badges when returning to the window', async 
   await screen.findByText('Consulta');
   expect(within(folders).getByLabelText('1 sin leer')).toBeVisible();
   expect(within(folders).getByLabelText('2 sin leer')).toBeVisible();
+});
+test('filters the selected folder by subject category and keeps it when switching folders', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [message], total: 1, page: 1, pageSize: 20, unreadCounts: { inbox: 1, archived: 0, spam: 0 }, categoryUnreadCounts: { CURSOS: 1, INSCRIPCIONES: 0, EVENTOS: 0, SOPORTE: 0, OTRO: 0 } }) });
+  render(<AdminMessagesView />);
+  const row = (await screen.findByText('Consulta')).closest('li')!;
+  expect(within(row).getByText('Cursos')).toBeVisible();
+  const folders = screen.getByRole('navigation', { name: 'Carpetas de mensajes' });
+  expect(within(folders).getAllByRole('button').map(button => button.textContent)).toEqual(['Bandeja de entrada1', 'Archivados', 'Spam']);
+  const filters = screen.getByRole('navigation', { name: 'Filtrar por asunto' });
+  expect(within(filters).getByRole('button', { name: /Todos/ })).toHaveAttribute('aria-pressed', 'true');
+  expect(within(filters).getByRole('button', { name: /Cursos/ })).toHaveTextContent('1');
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20 }) });
+  fireEvent.click(within(filters).getByRole('button', { name: /Inscripciones/ }));
+  await screen.findByText('Sin mensajes de inscripciones');
+  expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=inbox&category=INSCRIPCIONES', expect.anything());
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20 }) });
+  fireEvent.click(within(folders).getByRole('button', { name: /Spam/ }));
+  await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=spam&category=INSCRIPCIONES', expect.anything()));
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ messages: [], total: 0, page: 1, pageSize: 20 }) });
+  fireEvent.click(await screen.findByRole('button', { name: /Todos/ }));
+  await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith('/api/admin/messages?page=1&view=spam', expect.anything()));
 });
