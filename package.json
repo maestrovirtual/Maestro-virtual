@@ -11,6 +11,7 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e",
+    "test:load": "node scripts/load-test.mjs",
     "postinstall": "prisma generate",
     "staff:create": "tsx prisma/create-staff.ts"
   },
@@ -40,6 +41,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autocannon": "^9.0.0",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
