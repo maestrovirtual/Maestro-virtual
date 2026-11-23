@@ -492,6 +492,8 @@ export default function Navbar({
           </Link>
 
           <button
+            type="button"
+            aria-label="Abrir menú de navegación"
             className="
             inline-flex
 

@@ -154,12 +154,12 @@ describe('Optimizaciones de Imagenes y Web Performance (MV-42)', () => {
     expect(heroImg?.getAttribute('loading')).toBeNull();
   });
 
-  it('secciones secundarias (AboutUs y TargetAudience) mantienen lazy loading sin priority', () => {
+  it('AboutUs aplica priority por ser el elemento LCP y TargetAudience mantiene lazy loading', () => {
     const aboutUsContent = fs.readFileSync(
       path.resolve(process.cwd(), 'src/features/home/AboutUs.tsx'),
       'utf8'
     );
-    expect(aboutUsContent).not.toMatch(/\bpriority\b/);
+    expect(aboutUsContent).toMatch(/\bpriority\b/);
 
     const targetAudienceContent = fs.readFileSync(
       path.resolve(process.cwd(), 'src/features/home/TargetAudience.tsx'),
